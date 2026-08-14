@@ -201,7 +201,13 @@ export async function writeTextFile(root: string, rel: string, content: string):
   const canonicalRoot = await canonicalRootOf(root)
   const target = joinRel(root, rel)
   const parent = dirname(target)
-  await mkdir(parent, { recursive: true })
+  try {
+    await mkdir(parent, { recursive: true })
+  } catch (error) {
+    // A dangling-symlink ancestor or a read-only parent surfaces here;
+    // fold it into the structured error shape instead of a raw ENOENT/EACCES.
+    throw new FsOpsError('path-invalid', error instanceof Error ? error.message : String(error))
+  }
   let canonicalParent: string
   try {
     canonicalParent = await realpath(parent)

@@ -153,10 +153,12 @@ describe('read / write / list / glob roundtrips', () => {
   it('rejects symlinked escapes on read and write', async () => {
     const outside = join(dir, 'outside.txt')
     await writeFile(outside, 'secret')
+    const outsideDir = join(dir, 'outsideDir')
+    await mkdir(outsideDir)
     let linkCreated = false
     try {
       await symlink(outside, join(root, 'link.txt'))
-      await symlink(join(dir, 'outsideDir'), join(root, 'linkdir'), 'dir')
+      await symlink(outsideDir, join(root, 'linkdir'), 'dir')
       linkCreated = true
     } catch {
       // Windows without developer mode cannot create symlinks; skip the escape
