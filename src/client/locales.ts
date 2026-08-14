@@ -13,8 +13,6 @@ export type MultiRootKey =
   | 'entry.label'
   | 'entry.tooltip'
   | 'panel.title'
-  | 'panel.workspace'
-  | 'panel.noWorkspace'
   | 'panel.empty'
   | 'panel.add.title'
   | 'panel.add.pathPlaceholder'
@@ -23,6 +21,7 @@ export type MultiRootKey =
   | 'panel.add.submit'
   | 'panel.add.hint'
   | 'panel.browse.title'
+  | 'panel.browse.drives'
   | 'panel.browse.select'
   | 'panel.browse.up'
   | 'panel.browse.cancel'
@@ -40,18 +39,17 @@ export type MultiRootKey =
 
 export const zh: Record<MultiRootKey, string> = {
   'entry.label': '多根',
-  'entry.tooltip': '多根工作区：为当前工作区挂载多个独立文件夹',
+  'entry.tooltip': '多根工作区：挂载多个独立文件夹，全部平等、全局共享',
   'panel.title': '多根工作区',
-  'panel.workspace': '主工作区',
-  'panel.noWorkspace': '当前没有打开的工作区会话。',
-  'panel.empty': '还没有挂载额外文件夹。在上面添加一个目录，之后 agent 就能用 workspace_root_* 工具跨根读写。',
+  'panel.empty': '还没有挂载文件夹。在上面添加一个目录，之后 agent 就能用 workspace_root_* 工具跨根读写。',
   'panel.add.title': '挂载文件夹',
-  'panel.add.pathPlaceholder': '文件夹绝对路径，例如 E:\\projects\\frontend',
+  'panel.add.pathPlaceholder': '文件夹绝对路径，例如 D:\\projects\\frontend',
   'panel.add.namePlaceholder': '别名（可选，默认取文件夹名）',
   'panel.add.browse': '浏览',
   'panel.add.submit': '添加',
-  'panel.add.hint': '只能挂载存在且不同于主工作区的目录。',
+  'panel.add.hint': '只能挂载存在的目录，可先选择盘符再逐级进入。',
   'panel.browse.title': '选择文件夹',
+  'panel.browse.drives': '选择盘符',
   'panel.browse.select': '选择此目录',
   'panel.browse.up': '上一级',
   'panel.browse.cancel': '取消',
@@ -70,18 +68,17 @@ export const zh: Record<MultiRootKey, string> = {
 
 export const en: Record<MultiRootKey, string> = {
   'entry.label': 'Roots',
-  'entry.tooltip': 'Multi-root workspace: attach several independent folders to this workspace',
+  'entry.tooltip': 'Multi-root workspace: attach several independent folders, all equal and shared globally',
   'panel.title': 'Multi-Root Workspace',
-  'panel.workspace': 'Primary workspace',
-  'panel.noWorkspace': 'No workspace session is open right now.',
-  'panel.empty': 'No extra folders attached yet. Add one above; agents can then read and write across roots with the workspace_root_* tools.',
+  'panel.empty': 'No folders attached yet. Add one above; agents can then read and write across roots with the workspace_root_* tools.',
   'panel.add.title': 'Attach a folder',
-  'panel.add.pathPlaceholder': 'Absolute folder path, e.g. E:\\projects\\frontend',
+  'panel.add.pathPlaceholder': 'Absolute folder path, e.g. D:\\projects\\frontend',
   'panel.add.namePlaceholder': 'Alias (optional; defaults to the folder name)',
   'panel.add.browse': 'Browse',
   'panel.add.submit': 'Add',
-  'panel.add.hint': 'Only existing directories different from the primary workspace can be attached.',
+  'panel.add.hint': 'Only existing directories can be attached; pick a drive first, then drill down.',
   'panel.browse.title': 'Choose a folder',
+  'panel.browse.drives': 'Choose a drive',
   'panel.browse.select': 'Choose this directory',
   'panel.browse.up': 'Up',
   'panel.browse.cancel': 'Cancel',

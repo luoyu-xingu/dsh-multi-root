@@ -32,9 +32,9 @@ tests/              单测（store / fs-ops / tools / client 冒烟）
 ## 构建与提交前检查
 
 ```sh
-pnpm typecheck   # tsc --noEmit
+pnpm typecheck   # tsc -b（host/client 两个 program）+ 测试 program
 pnpm test        # vitest run
-pnpm build       # tsc -p tsconfig.build.json && tsdown
+pnpm build       # tsc -b && tsdown
 ```
 
 - 提交信息 Conventional Commits（`feat(scope): subject`），无 emoji（代码、
@@ -43,3 +43,21 @@ pnpm build       # tsc -p tsconfig.build.json && tsdown
   行为变化同步更新。
 - 客户端代码禁止使用 node API（bundle 纯度门只拦 @deepseek-ai 值导入，
   不拦 node 全局）；样式走 CSS Modules（`*.module.css`）。
+
+## 本机热部署（dsh web 不重启）
+
+本机 profile（`~/.dsh/profiles/web`）以别名
+`@luoyu-xingu/dsh-multi-root-live3` 链接到部署目录
+`E:\dsh_plugins\dsh-multi-root-live2`（真实拷贝 + node_modules junction），
+patch 行在 profile 的 `cordis.patch.yml`。宿主半区自带 self hot reload
+（`src/hmr.ts`）：监听自身 lib 文件，变更即清模块缓存并原位重挂载。
+更新流程：
+
+1. `pnpm typecheck && pnpm test && pnpm build`
+2. `Copy-Item lib\* E:\dsh_plugins\dsh-multi-root-live2\lib\ -Recurse -Force`
+3. 等约 10 秒（自愈重载生效），浏览器刷新即得新客户端 bundle。
+
+注意：ESM 模块缓存按「真实路径 URL」钉死，若 self-HMR 本身被改坏，恢复
+需换新别名（新行名）+ 新真实目录冷激活一次；patch 行名必须保留
+`@luoyu-xingu/dsh-multi-root*` 前缀（hmr.ts 按前缀找自己的 loader 条目）。
+

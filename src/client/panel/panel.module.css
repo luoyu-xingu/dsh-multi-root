@@ -65,30 +65,6 @@ html:not([data-dsh-multi-root-active]) [data-dsh-multi-root-view] {
   font-size: 14px;
 }
 
-.workspaceRow {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  background: var(--mr-bg-soft);
-  border: 1px solid var(--mr-border);
-  border-radius: 6px;
-  flex: none;
-}
-
-.workspaceLabel {
-  font-size: 11px;
-  color: var(--mr-text-dim);
-}
-
-.workspacePath {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .addSection {
   display: flex;
   flex-direction: column;
@@ -358,6 +334,36 @@ html:not([data-dsh-multi-root-active]) [data-dsh-multi-root-view] {
   align-items: center;
   justify-content: space-between;
   font-weight: 600;
+}
+
+.driveBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--mr-border);
+}
+
+.driveChip,
+.driveChipActive {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid var(--mr-border);
+  border-radius: 12px;
+  background: var(--mr-bg-soft);
+  color: var(--mr-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.driveChip:hover {
+  border-color: var(--mr-accent);
+}
+
+.driveChipActive {
+  border-color: var(--mr-accent);
+  background: var(--mr-accent);
+  color: var(--mr-accent-text);
 }
 
 .dialogPath {

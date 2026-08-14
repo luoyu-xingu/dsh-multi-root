@@ -1,7 +1,8 @@
 /**
  * Fs-ops tests: the containment boundary of the multi-root plugin. Traversal
- * attempts, symlinked escapes, roundtrips, and caps are exercised against a
- * real sandbox directory tree (never the plugin's own files).
+ * attempts, symlinked escapes, roundtrips, caps, and the drive-level browse
+ * feed are exercised against a real sandbox directory tree (never the
+ * plugin's own files).
  */
 
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
@@ -18,7 +19,6 @@ import {
   listDir,
   readTextFile,
   resolveRootRef,
-  workspaceKeyOf,
   writeTextFile,
 } from '../src/fs-ops.ts'
 import { MultiRootStore } from '../src/store.ts'
@@ -59,43 +59,28 @@ describe('joinRel / isPathInside', () => {
   })
 })
 
-describe('workspace key and root attachment', () => {
-  it('canonicalizes existing directories and degrades for missing ones', async () => {
-    const ws = join(dir, 'ws')
-    await mkdir(ws)
-    // realpath is the canonical spelling (long form even when tmpdir()
-    // returns the 8.3 short form on Windows).
-    expect(await workspaceKeyOf(ws)).toBe(await realpath(ws))
-    const missing = join(dir, 'missing')
-    expect(await workspaceKeyOf(missing)).toBe(missing)
-  })
-
-  it('canonicalizeRootPath validates existence and rejects the workspace itself', async () => {
-    const ws = join(dir, 'ws')
-    await mkdir(ws)
+describe('root attachment and resolution', () => {
+  it('canonicalizeRootPath validates existence and directory-ness', async () => {
     const other = join(dir, 'other')
     await mkdir(other)
-    await expect(canonicalizeRootPath(ws, ws)).rejects.toThrow(FsOpsError)
-    await expect(canonicalizeRootPath(ws, join(dir, 'nope'))).rejects.toThrow(FsOpsError)
+    await expect(canonicalizeRootPath(join(dir, 'nope'))).rejects.toThrow(FsOpsError)
     const file = join(dir, 'plain.txt')
     await writeFile(file, 'x')
-    await expect(canonicalizeRootPath(ws, file)).rejects.toThrow(FsOpsError)
-    const ok = await canonicalizeRootPath(ws, other)
+    await expect(canonicalizeRootPath(file)).rejects.toThrow(FsOpsError)
+    const ok = await canonicalizeRootPath(other)
     expect(ok.path).toBe(await realpath(other))
     expect(ok.name).toBe('other')
   })
 
   it('resolves roots by id first, then by name', async () => {
-    const ws = join(dir, 'ws')
-    await mkdir(ws)
-    const a = await store.add(ws, { name: 'same', path: '/p/a' })
-    const b = await store.add(ws, { name: 'same', path: '/p/b' })
+    const a = await store.add({ name: 'same', path: '/p/a' })
+    const b = await store.add({ name: 'same', path: '/p/b' })
     // Exact id wins over the shared name.
-    expect((await resolveRootRef(store, ws, a.id)).path).toBe('/p/a')
-    expect((await resolveRootRef(store, ws, b.id)).path).toBe('/p/b')
+    expect((await resolveRootRef(store, a.id)).path).toBe('/p/a')
+    expect((await resolveRootRef(store, b.id)).path).toBe('/p/b')
     // The shared name resolves to the first match.
-    expect((await resolveRootRef(store, ws, 'same')).path).toBe('/p/a')
-    await expect(resolveRootRef(store, ws, 'nope')).rejects.toThrow(FsOpsError)
+    expect((await resolveRootRef(store, 'same')).path).toBe('/p/a')
+    await expect(resolveRootRef(store, 'nope')).rejects.toThrow(FsOpsError)
   })
 })
 
@@ -142,10 +127,23 @@ describe('read / write / list / glob roundtrips', () => {
     await expect(globInRoot(root, '/etc/*')).rejects.toThrow(FsOpsError)
   })
 
-  it('browses directories for the picker', async () => {
-    const result = await browseDirs(root)
-    expect(result.path).toBe(root)
-    expect(result.dirs.map(entry => entry.name)).toContain('src')
+  it('browses directories with a drive-level entry point on Windows', async () => {
+    if (process.platform === 'win32') {
+      // Empty path opens at the drive level instead of defaulting to a drive.
+      const level = await browseDirs('')
+      expect(level.path).toBe('')
+      expect(level.drives.length).toBeGreaterThan(0)
+      expect(level.dirs.map(entry => entry.name)).toEqual(level.drives.map(entry => entry.name))
+      expect(level.dirs.every(entry => /^[A-Z]:$/.test(entry.name))).toBe(true)
+      // Entering one drive lists its directories and keeps the drive roster.
+      const inside = await browseDirs(level.dirs[0].path)
+      expect(inside.path).toBe(level.dirs[0].path)
+      expect(inside.drives.length).toBeGreaterThan(0)
+    } else {
+      const result = await browseDirs('')
+      expect(result.drives).toEqual([])
+      expect(result.path).not.toBe('')
+    }
     const empty = await browseDirs(join(dir, 'missing'))
     expect(empty.dirs).toEqual([])
   })

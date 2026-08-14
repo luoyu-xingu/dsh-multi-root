@@ -31,6 +31,7 @@
   "include": [
     "src/index.ts",
     "src/invariant.ts",
+    "src/hmr.ts",
     "src/store.ts",
     "src/fs-ops.ts",
     "src/tools.ts",

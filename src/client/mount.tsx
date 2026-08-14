@@ -26,12 +26,6 @@ const OTHER_ACTIVE_ATTRS = ['data-dsh-taskboard-active', 'data-dsh-ssh-active', 
 const ACTIVATE_EVENT = 'dsh-panel-activate'
 const PANEL_NAME = 'multi-root'
 
-/** Workspace binding the panel re-renders on. */
-export interface WorkspaceBinding {
-  get(): string
-  subscribe(listener: () => void): () => void
-}
-
 /** Find the center column, or undefined while the frame is not mounted. */
 function conversationColumn(): HTMLElement | undefined {
   return document.querySelector<HTMLElement>(CONVERSATION_COLUMN_SELECTOR) ?? undefined
@@ -42,16 +36,15 @@ function conversationColumn(): HTMLElement | undefined {
  * to the controller's panelOpen state.
  * @param controller - the panel controller driving the view.
  * @param api - the wire client the panel operates through.
- * @param workspaceBinding - the active session cwd binding.
  * @returns disposer unmounting the tree and restoring the column.
  */
-export function mountPanel(controller: PanelController, api: MultiRootApi, workspaceBinding: WorkspaceBinding): () => void {
+export function mountPanel(controller: PanelController, api: MultiRootApi): () => void {
   let root: Root | undefined
   let container: HTMLDivElement | undefined
 
   const render = (): void => {
     if (root === undefined) return
-    root.render(<MultiRootPanel controller={controller} api={api} workspace={workspaceBinding.get()} />)
+    root.render(<MultiRootPanel controller={controller} api={api} />)
   }
 
   const ensure = (): void => {
@@ -105,7 +98,6 @@ export function mountPanel(controller: PanelController, api: MultiRootApi, works
   document.addEventListener('click', onClickSidebarRow, true)
   document.addEventListener(ACTIVATE_EVENT, onOtherActivate)
   const unsubscribe = controller.subscribe(applyActive)
-  const unsubscribeWorkspace = workspaceBinding.subscribe(() => { render() })
   applyActive()
   ensure()
 
@@ -114,7 +106,6 @@ export function mountPanel(controller: PanelController, api: MultiRootApi, works
     document.removeEventListener(ACTIVATE_EVENT, onOtherActivate)
     waitObserver.disconnect()
     unsubscribe()
-    unsubscribeWorkspace()
     document.documentElement.removeAttribute(ACTIVE_ATTR)
     root?.unmount()
     root = undefined

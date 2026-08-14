@@ -8,10 +8,11 @@
 import { API } from '../invariant.ts'
 import type { BrowseDir, RootView } from '../core/types.ts'
 
-/** One browse listing. */
+/** One browse listing: directories of a path plus the drive roster. */
 export interface BrowseResult {
   path: string
   dirs: BrowseDir[]
+  drives: BrowseDir[]
 }
 
 /** Typed envelope reader: the family returns `{ error }` on failure. */
@@ -42,33 +43,32 @@ async function request<T>(path: string, body?: Record<string, unknown>): Promise
 
 /** The panel's API surface. */
 export class MultiRootApi {
-  /** Roots attached to one workspace (with live status). */
-  async roots(workspace: string): Promise<{ workspace: string; roots: RootView[] }> {
-    const query = encodeURIComponent(workspace)
-    return request<{ workspace: string; roots: RootView[] }>(`${API.roots}?workspace=${query}`)
+  /** All attached roots (with live status). */
+  async roots(): Promise<{ roots: RootView[] }> {
+    return request<{ roots: RootView[] }>(API.roots)
   }
 
-  /** Attach a folder to one workspace. */
-  async add(workspace: string, path: string, name: string): Promise<{ root: RootView }> {
-    return request<{ root: RootView }>(API.roots, { workspace, path, name })
+  /** Attach a folder to the global root set. */
+  async add(path: string, name: string): Promise<{ root: RootView }> {
+    return request<{ root: RootView }>(API.roots, { path, name })
   }
 
   /** Remove one root. */
-  async remove(workspace: string, id: string): Promise<{ ok: true }> {
-    return request<{ ok: true }>(API.rootsRemove, { workspace, id })
+  async remove(id: string): Promise<{ ok: true }> {
+    return request<{ ok: true }>(API.rootsRemove, { id })
   }
 
   /** Rename one root. */
-  async rename(workspace: string, id: string, name: string): Promise<{ root: RootView }> {
-    return request<{ root: RootView }>(API.rootsRename, { workspace, id, name })
+  async rename(id: string, name: string): Promise<{ root: RootView }> {
+    return request<{ root: RootView }>(API.rootsRename, { id, name })
   }
 
   /** Reorder roots to the given id sequence. */
-  async reorder(workspace: string, ids: string[]): Promise<{ roots: RootView[] }> {
-    return request<{ roots: RootView[] }>(API.rootsReorder, { workspace, ids })
+  async reorder(ids: string[]): Promise<{ roots: RootView[] }> {
+    return request<{ roots: RootView[] }>(API.rootsReorder, { ids })
   }
 
-  /** Browse directories (the picker feed). */
+  /** Browse directories (the picker feed); empty path opens the drive level. */
   async browse(path: string): Promise<BrowseResult> {
     return request<BrowseResult>(API.browse, { path })
   }

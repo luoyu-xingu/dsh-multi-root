@@ -1,8 +1,8 @@
 /**
- * Client smoke test: the panel mounts and renders workspace/root rows
- * against a stubbed wire client. Light-mount assertion only — the full DOM
- * wiring (sidebar entry injection, center-column takeover) is shell
- * territory and stays outside the unit boundary.
+ * Client smoke test: the panel mounts and renders root rows against a
+ * stubbed wire client. Light-mount assertion only — the full DOM wiring
+ * (sidebar entry injection, center-column takeover) is shell territory and
+ * stays outside the unit boundary.
  * @vitest-environment jsdom
  */
 
@@ -36,32 +36,33 @@ function stubRoot(id: string, name: string, path: string): RootView {
 }
 
 describe('MultiRootPanel', () => {
-  it('renders the no-workspace state when nothing is bound', async () => {
-    const api = { roots: vi.fn() } as unknown as MultiRootApi
+  it('renders the empty state when nothing is attached', async () => {
+    const api = { roots: vi.fn(async () => ({ roots: [] })) } as unknown as MultiRootApi
     await act(async () => {
       const root = createRoot(container)
-      root.render(<MultiRootPanel controller={new PanelController()} api={api} workspace="" />)
+      root.render(<MultiRootPanel controller={new PanelController()} api={api} />)
       cleanup = () => { root.unmount() }
     })
-    expect(container.textContent).toContain('工作区')
+    await vi.waitFor(() => {
+      expect(container.textContent).toContain('多根工作区')
+    })
+    expect(api.roots).toHaveBeenCalledTimes(1)
   })
 
-  it('renders attached roots for the bound workspace', async () => {
+  it('renders attached roots', async () => {
     const roots = [stubRoot('r1', 'frontend', '/p/frontend'), stubRoot('r2', 'backend', '/p/backend')]
     const api = {
-      roots: vi.fn(async () => ({ workspace: '/p/ws', roots })),
+      roots: vi.fn(async () => ({ roots })),
     } as unknown as MultiRootApi
     await act(async () => {
       const root = createRoot(container)
-      root.render(<MultiRootPanel controller={new PanelController()} api={api} workspace="/p/ws" />)
+      root.render(<MultiRootPanel controller={new PanelController()} api={api} />)
       cleanup = () => { root.unmount() }
     })
     await vi.waitFor(() => {
       expect(container.textContent).toContain('frontend')
       expect(container.textContent).toContain('backend')
-      expect(container.textContent).toContain('/p/ws')
     })
-    expect(api.roots).toHaveBeenCalledWith('/p/ws')
   })
 
   it('shows a structured load error when the host fails', async () => {
@@ -70,11 +71,35 @@ describe('MultiRootPanel', () => {
     } as unknown as MultiRootApi
     await act(async () => {
       const root = createRoot(container)
-      root.render(<MultiRootPanel controller={new PanelController()} api={api} workspace="/p/ws" />)
+      root.render(<MultiRootPanel controller={new PanelController()} api={api} />)
       cleanup = () => { root.unmount() }
     })
     await vi.waitFor(() => {
       expect(container.textContent).toContain('loopback-only')
+    })
+  })
+
+  it('opens the browse dialog at the drive level', async () => {
+    const api = {
+      roots: vi.fn(async () => ({ roots: [] })),
+      browse: vi.fn(async (path: string) => path === ''
+        ? { path: '', dirs: [{ name: 'C:', path: 'C:\\' }, { name: 'D:', path: 'D:\\' }], drives: [{ name: 'C:', path: 'C:\\' }, { name: 'D:', path: 'D:\\' }] }
+        : { path, dirs: [], drives: [{ name: 'C:', path: 'C:\\' }] }),
+    } as unknown as MultiRootApi
+    await act(async () => {
+      const root = createRoot(container)
+      root.render(<MultiRootPanel controller={new PanelController()} api={api} />)
+      cleanup = () => { root.unmount() }
+    })
+    await act(async () => {
+      const button = Array.from(container.querySelectorAll('button')).find(el => el.textContent === '浏览')
+      expect(button).toBeDefined()
+      button?.click()
+    })
+    await vi.waitFor(() => {
+      expect(container.textContent).toContain('选择盘符')
+      expect(container.textContent).toContain('C:')
+      expect(container.textContent).toContain('D:')
     })
   })
 })

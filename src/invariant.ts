@@ -45,4 +45,4 @@ export const SECTION_ORDER = 180
  * Model-facing announcement: plugin presence, capabilities, and limits.
  * Kept in the same band the dsh-ssh / task-board plugins use.
  */
-export const GUIDANCE = '本机已安装 dsh-multi-root 插件（DSH 多根工作区）：侧边栏「多根」入口；用户可为当前工作区挂载多个独立文件夹（根目录）。能力：workspace_roots 列出当前工作区全部根；workspace_root_list / workspace_root_read / workspace_root_write / workspace_root_glob 在任意已挂载根内做目录列举、文本读取、文本写入与 glob 匹配。限制：根目录只能由用户在 GUI 面板中挂载或移除，agent 不得自行添加；这些工具绕过 DSH 文件沙箱、以宿主进程权限直接读写用户登记的根目录，且严格限制在根目录内部（含路径穿越与符号链接逃逸防护）；读取超过 256KB 自动截断；写入会真实覆盖磁盘文件，覆盖已存在文件前先向用户确认；列举与 glob 结果有数量上限。用户提到「多根工作区 / 挂载文件夹 / 额外根目录 / 外部项目目录 / 跨项目读写」时即指本插件，请据此协作。'
+export const GUIDANCE = '本机已安装 dsh-multi-root 插件（DSH 多根工作区）：侧边栏「多根」入口；用户可为 DSH 挂载多个独立文件夹（根目录），所有根一律平等、全局共享。能力：workspace_roots 列出全部根；workspace_root_list / workspace_root_read / workspace_root_write / workspace_root_glob 在任意已挂载根内做目录列举、文本读取、文本写入与 glob 匹配。限制：根目录只能由用户在 GUI 面板中挂载或移除，agent 不得自行添加；这些工具绕过 DSH 文件沙箱、以宿主进程权限直接读写用户登记的根目录，且严格限制在根目录内部（含路径穿越与符号链接逃逸防护）；读取超过 256KB 自动截断；写入会真实覆盖磁盘文件，覆盖已存在文件前先向用户确认；列举与 glob 结果有数量上限。用户提到「多根工作区 / 挂载文件夹 / 额外根目录 / 外部项目目录 / 跨项目读写」时即指本插件，请据此协作。'

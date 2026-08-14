@@ -16,7 +16,7 @@
 import fg from 'fast-glob'
 import { existsSync } from 'node:fs'
 import { lstat, mkdir, open, readdir, realpath, stat, writeFile } from 'node:fs/promises'
-import { basename, dirname, isAbsolute, join, normalize, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import type { BrowseDir, DirEntryView, RootEntry, RootView } from './core/types.ts'
 import { MAX_GLOB_MATCHES, MAX_LIST_ENTRIES, MAX_READ_BYTES, MAX_WRITE_BYTES } from './invariant.ts'
 import type { MultiRootStore } from './store.ts'
@@ -49,18 +49,6 @@ export function isPathInside(root: string, child: string): boolean {
   return normChild.startsWith(`${normRoot}/`)
 }
 
-/** Canonical key for one workspace path (realpath when possible). */
-export async function workspaceKeyOf(path: string): Promise<string> {
-  if (typeof path !== 'string' || path === '') throw new FsOpsError('workspace-unknown', 'empty workspace path')
-  try {
-    return await realpath(path)
-  } catch {
-    // The workspace directory may be temporarily missing; fall back to a
-    // normalized absolute spelling so the record stays addressable.
-    return normalize(isAbsolute(path) ? path : resolve(path))
-  }
-}
-
 /**
  * Join a root-relative path under a root, rejecting traversal attempts.
  * The path must be relative: absolute paths, drive letters, empty paths, and
@@ -79,9 +67,9 @@ export function joinRel(root: string, rel: string): string {
 }
 
 /** Resolve a root reference (exact id first, then exact display name). */
-export async function resolveRootRef(store: MultiRootStore, workspaceKey: string, ref: string): Promise<RootEntry> {
+export async function resolveRootRef(store: MultiRootStore, ref: string): Promise<RootEntry> {
   if (typeof ref !== 'string' || ref === '') throw new FsOpsError('root-unknown', 'root reference is empty')
-  const roots = await store.roots(workspaceKey)
+  const roots = await store.list()
   const entry = roots.find(root => root.id === ref) ?? roots.find(root => root.name === ref)
   if (entry === undefined) {
     throw new FsOpsError('root-unknown', `no attached root matches "${ref}" (use workspace_roots to list them)`)
@@ -105,11 +93,12 @@ export async function toRootView(entry: RootEntry): Promise<RootView> {
 }
 
 /**
- * Validate and canonicalize a candidate root path for attachment.
- * The directory must exist and must not be the workspace itself.
+ * Validate and canonicalize a candidate root path for attachment: the
+ * directory must exist (any drive, any location — roots are global and all
+ * equal, there is no primary workspace to conflict with).
  * @returns the canonical path and the default display name.
  */
-export async function canonicalizeRootPath(workspaceKey: string, path: string): Promise<{ path: string; name: string }> {
+export async function canonicalizeRootPath(path: string): Promise<{ path: string; name: string }> {
   if (typeof path !== 'string' || path === '') throw new FsOpsError('path-invalid', 'root path is empty')
   let canonical: string
   try {
@@ -123,17 +112,6 @@ export async function canonicalizeRootPath(workspaceKey: string, path: string): 
   } catch (error) {
     if (error instanceof FsOpsError) throw error
     throw new FsOpsError('path-invalid', 'path does not resolve on disk')
-  }
-  // Canonicalize the workspace key too (callers may pass a short 8.3
-  // spelling on Windows); only the canonical comparison is meaningful.
-  let canonicalKey: string
-  try {
-    canonicalKey = await realpath(workspaceKey)
-  } catch {
-    canonicalKey = normalize(isAbsolute(workspaceKey) ? workspaceKey : resolve(workspaceKey))
-  }
-  if (normalizeForPrefix(canonical) === normalizeForPrefix(canonicalKey)) {
-    throw new FsOpsError('path-invalid', 'the workspace folder itself is already the primary root; attach a different folder')
   }
   return { path: canonical, name: basename(canonical) || canonical }
 }
@@ -275,14 +253,24 @@ export async function globInRoot(root: string, pattern: string, maxResults: numb
   return { matches: matches.slice(0, limit), truncated: matches.length > limit }
 }
 
-/** List the directories of one path (the GUI picker feed; empty = platform roots). */
-export async function browseDirs(path?: string): Promise<{ path: string; dirs: BrowseDir[] }> {
-  const base = typeof path === 'string' && path !== '' ? path : browseBase()
+/**
+ * List the directories of one path (the GUI picker feed) plus the drive
+ * roster. An empty path opens at the drive level on Windows (so the user
+ * picks a drive instead of silently defaulting to the first one) and at the
+ * home directory elsewhere.
+ */
+export async function browseDirs(path?: string): Promise<{ path: string; dirs: BrowseDir[]; drives: BrowseDir[] }> {
+  const drives = listDrives()
+  if (typeof path !== 'string' || path === '') {
+    if (drives.length > 0) return { path: '', dirs: drives, drives }
+    return { path: homeBase(), dirs: [], drives }
+  }
+  const base = path
   try {
     const info = await stat(base)
-    if (!info.isDirectory()) return { path: base, dirs: [] }
+    if (!info.isDirectory()) return { path: base, dirs: [], drives }
   } catch {
-    return { path: base, dirs: [] }
+    return { path: base, dirs: [], drives }
   }
   try {
     const dirents = await readdir(base, { withFileTypes: true })
@@ -290,20 +278,22 @@ export async function browseDirs(path?: string): Promise<{ path: string; dirs: B
       .filter(dirent => dirent.isDirectory())
       .map(dirent => ({ name: dirent.name, path: join(base, dirent.name) }))
       .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
-    return { path: base, dirs }
+    return { path: base, dirs, drives }
   } catch {
-    return { path: base, dirs: [] }
+    return { path: base, dirs: [], drives }
   }
 }
 
-/** The picker's starting point: drives on Windows, the home directory elsewhere. */
-function browseBase(): string {
-  if (process.platform === 'win32') {
-    // The first existing drive letter, falling back to the platform root.
-    const candidate = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find(letter => existsSync(`${letter}:\\`))
-    if (candidate !== undefined) return `${candidate}:\\`
-    return resolve('/')
-  }
+/** Every existing drive letter on Windows (the picker's top level). */
+function listDrives(): BrowseDir[] {
+  if (process.platform !== 'win32') return []
+  return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+    .filter(letter => existsSync(`${letter}:\\`))
+    .map(letter => ({ name: `${letter}:`, path: `${letter}:\\` }))
+}
+
+/** The picker's starting point on non-Windows platforms: the home directory. */
+function homeBase(): string {
   const home = process.env.HOME ?? process.env.USERPROFILE
   return home !== undefined && home !== '' ? home : resolve('/')
 }

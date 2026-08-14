@@ -1,16 +1,17 @@
 /**
  * The /api/dsh-multi-root route family: list/add/remove/rename/reorder the
- * roots attached to one workspace, plus the directory browse feed for the GUI
- * picker. Every route carries a loopback-only trust fence plus browser
- * same-origin markers — these endpoints read and attach host directories, so
- * LAN-exposed dsh web deployments must not serve them.
+ * global root set, plus the directory browse feed for the GUI picker (with a
+ * drive-level entry point on Windows). Every route carries a loopback-only
+ * trust fence plus browser same-origin markers — these endpoints read and
+ * attach host directories, so LAN-exposed dsh web deployments must not serve
+ * them.
  * @module @luoyu-xingu/dsh-multi-root/routes
  */
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { WebRoute } from '@deepseek-ai/dsh-host-webserver'
 import { API, MAX_JSON_BODY_BYTES } from './invariant.ts'
-import { browseDirs, canonicalizeRootPath, toRootView, workspaceKeyOf } from './fs-ops.ts'
+import { browseDirs, canonicalizeRootPath, toRootView } from './fs-ops.ts'
 import { MultiRootStore } from './store.ts'
 
 /**
@@ -65,12 +66,6 @@ async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknow
   }
 }
 
-/** URL query helper (first value, decoded). */
-function queryParam(url: URL, name: string): string | undefined {
-  const value = url.searchParams.get(name)
-  return value === null ? undefined : value
-}
-
 /** Field reader: one required string field of a parsed body. */
 function stringField(body: Record<string, unknown>, name: string): string {
   const value = body[name]
@@ -108,18 +103,16 @@ export function makeRoutes(store: MultiRootStore): WebRoute[] {
       path: API.roots,
       handler: async (req, res) => {
         const method = req.method ?? 'GET'
-        const url = new URL(req.url ?? '/', 'http://localhost')
         if (method === 'GET') {
           if (!isLoopbackRequest(req)) {
             writeJson(res, 403, { error: 'forbidden: loopback-only' })
             return
           }
           try {
-            const workspace = await workspaceKeyOf(queryParam(url, 'workspace') ?? '')
-            const entries = await store.roots(workspace)
+            const entries = await store.list()
             const roots = []
             for (const entry of entries) roots.push(await toRootView(entry))
-            writeJson(res, 200, { workspace, roots })
+            writeJson(res, 200, { roots })
           } catch (error) {
             fail(res, error)
           }
@@ -132,10 +125,9 @@ export function makeRoutes(store: MultiRootStore): WebRoute[] {
           return
         }
         try {
-          const workspace = await workspaceKeyOf(stringField(body, 'workspace'))
-          const canonical = await canonicalizeRootPath(workspace, stringField(body, 'path'))
+          const canonical = await canonicalizeRootPath(stringField(body, 'path'))
           const name = stringField(body, 'name')
-          const entry = await store.add(workspace, { name: name !== '' ? name : canonical.name, path: canonical.path })
+          const entry = await store.add({ name: name !== '' ? name : canonical.name, path: canonical.path })
           writeJson(res, 201, { root: await toRootView(entry) })
         } catch (error) {
           fail(res, error)
@@ -154,8 +146,7 @@ export function makeRoutes(store: MultiRootStore): WebRoute[] {
           return
         }
         try {
-          const workspace = await workspaceKeyOf(stringField(body, 'workspace'))
-          await store.remove(workspace, stringField(body, 'id'))
+          await store.remove(stringField(body, 'id'))
           writeJson(res, 200, { ok: true })
         } catch (error) {
           fail(res, error)
@@ -174,8 +165,7 @@ export function makeRoutes(store: MultiRootStore): WebRoute[] {
           return
         }
         try {
-          const workspace = await workspaceKeyOf(stringField(body, 'workspace'))
-          const entry = await store.rename(workspace, stringField(body, 'id'), stringField(body, 'name'))
+          const entry = await store.rename(stringField(body, 'id'), stringField(body, 'name'))
           writeJson(res, 200, { root: await toRootView(entry) })
         } catch (error) {
           fail(res, error)
@@ -194,14 +184,13 @@ export function makeRoutes(store: MultiRootStore): WebRoute[] {
           return
         }
         try {
-          const workspace = await workspaceKeyOf(stringField(body, 'workspace'))
           const raw = body.ids
           if (!Array.isArray(raw) || raw.some(id => typeof id !== 'string')) {
             writeJson(res, 400, { error: 'ids must be an array of root ids' })
             return
           }
-          await store.reorder(workspace, raw as string[])
-          const entries = await store.roots(workspace)
+          await store.reorder(raw as string[])
+          const entries = await store.list()
           const roots = []
           for (const entry of entries) roots.push(await toRootView(entry))
           writeJson(res, 200, { roots })

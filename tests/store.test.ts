@@ -1,9 +1,9 @@
 /**
  * Store tests: the durable persistence semantics of ~/.dsh/dsh-multi-root.json
- * (keyed by canonical workspace path) without touching the real home config.
+ * (one flat, ordered root list) without touching the real home config.
  */
 
-import { mkdtemp, readFile, writeFile, mkdir } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -25,60 +25,54 @@ afterEach(() => {
 })
 
 describe('MultiRootStore', () => {
-  it('starts empty for an unknown workspace key', async () => {
-    expect(await store.roots('/nonexistent/ws')).toEqual([])
+  it('starts empty', async () => {
+    expect(await store.list()).toEqual([])
   })
 
-  it('adds, lists, removes roots per workspace key', async () => {
-    const entry = await store.add('W1', { name: 'frontend', path: '/p/frontend' })
+  it('adds, lists, removes roots in order', async () => {
+    const entry = await store.add({ name: 'frontend', path: '/p/frontend' })
     expect(entry.id).toBeTruthy()
     expect(entry.createdAt).toBeGreaterThan(0)
 
-    const roots = await store.roots('W1')
-    expect(roots).toHaveLength(1)
-    expect(roots[0]).toMatchObject({ name: 'frontend', path: '/p/frontend' })
+    expect(await store.list()).toHaveLength(1)
 
-    await store.add('W1', { name: 'backend', path: '/p/backend' })
-    await store.add('W2', { name: 'docs', path: '/p/docs' })
-    expect(await store.roots('W1')).toHaveLength(2)
-    expect(await store.roots('W2')).toHaveLength(1)
+    await store.add({ name: 'backend', path: '/p/backend' })
+    expect((await store.list()).map(root => root.name)).toEqual(['frontend', 'backend'])
 
-    await store.remove('W1', entry.id)
-    expect((await store.roots('W1')).map(root => root.name)).toEqual(['backend'])
+    await store.remove(entry.id)
+    expect((await store.list()).map(root => root.name)).toEqual(['backend'])
     // Idempotent: removing again resolves without error.
-    await store.remove('W1', entry.id)
+    await store.remove(entry.id)
   })
 
-  it('rejects duplicate paths within one workspace', async () => {
-    await store.add('W1', { name: 'a', path: '/p/a' })
-    await expect(store.add('W1', { name: 'a2', path: '/p/a' })).rejects.toThrow(StoreError)
-    // The same path under a different workspace key is allowed.
-    await expect(store.add('W2', { name: 'a', path: '/p/a' })).resolves.toBeTruthy()
+  it('rejects duplicate paths', async () => {
+    await store.add({ name: 'a', path: '/p/a' })
+    await expect(store.add({ name: 'a2', path: '/p/a' })).rejects.toThrow(StoreError)
   })
 
   it('renames a root and stamps updatedAt', async () => {
-    const entry = await store.add('W1', { name: 'old', path: '/p/a' })
-    const renamed = await store.rename('W1', entry.id, 'new')
+    const entry = await store.add({ name: 'old', path: '/p/a' })
+    const renamed = await store.rename(entry.id, 'new')
     expect(renamed.name).toBe('new')
     expect(renamed.updatedAt).toBeGreaterThanOrEqual(entry.updatedAt)
-    expect((await store.roots('W1'))[0].name).toBe('new')
-    await expect(store.rename('W1', 'nope', 'x')).rejects.toThrow(StoreError)
+    expect((await store.list())[0].name).toBe('new')
+    await expect(store.rename('nope', 'x')).rejects.toThrow(StoreError)
   })
 
   it('reorders roots only on an exact id set', async () => {
-    const a = await store.add('W1', { name: 'a', path: '/p/a' })
-    const b = await store.add('W1', { name: 'b', path: '/p/b' })
-    const c = await store.add('W1', { name: 'c', path: '/p/c' })
-    await store.reorder('W1', [c.id, a.id, b.id])
-    expect((await store.roots('W1')).map(root => root.id)).toEqual([c.id, a.id, b.id])
-    await expect(store.reorder('W1', [a.id, b.id])).rejects.toThrow(StoreError)
-    await expect(store.reorder('W1', [a.id, b.id, 'nope'])).rejects.toThrow(StoreError)
+    const a = await store.add({ name: 'a', path: '/p/a' })
+    const b = await store.add({ name: 'b', path: '/p/b' })
+    const c = await store.add({ name: 'c', path: '/p/c' })
+    await store.reorder([c.id, a.id, b.id])
+    expect((await store.list()).map(root => root.id)).toEqual([c.id, a.id, b.id])
+    await expect(store.reorder([a.id, b.id])).rejects.toThrow(StoreError)
+    await expect(store.reorder([a.id, b.id, 'nope'])).rejects.toThrow(StoreError)
   })
 
   it('persists across instances', async () => {
-    await store.add('W1', { name: 'frontend', path: '/p/frontend' })
+    await store.add({ name: 'frontend', path: '/p/frontend' })
     const reloaded = new MultiRootStore(file)
-    const roots = await reloaded.roots('W1')
+    const roots = await reloaded.list()
     expect(roots).toHaveLength(1)
     expect(roots[0].name).toBe('frontend')
   })
@@ -87,17 +81,38 @@ describe('MultiRootStore', () => {
     await mkdir(dirname(file), { recursive: true })
     await writeFile(file, 'not json {', 'utf8')
     const corrupt = new MultiRootStore(file)
-    expect(await corrupt.roots('W1')).toEqual([])
+    expect(await corrupt.list()).toEqual([])
     // A subsequent mutation still persists a valid file.
-    await corrupt.add('W1', { name: 'ok', path: '/p/ok' })
+    await corrupt.add({ name: 'ok', path: '/p/ok' })
     const reloaded = new MultiRootStore(file)
-    expect((await reloaded.roots('W1')).map(root => root.name)).toEqual(['ok'])
+    expect((await reloaded.list()).map(root => root.name)).toEqual(['ok'])
   })
 
-  it('writes a valid JSON shape with version 1', async () => {
-    await store.add('W1', { name: 'frontend', path: '/p/frontend' })
-    const raw = JSON.parse(await readFile(file, 'utf8')) as { version: number; workspaces: Record<string, { roots: unknown[] }> }
-    expect(raw.version).toBe(1)
-    expect(raw.workspaces.W1.roots).toHaveLength(1)
+  it('migrates a version-1 per-workspace file into the flat list', async () => {
+    await mkdir(dirname(file), { recursive: true })
+    await writeFile(file, JSON.stringify({
+      version: 1,
+      workspaces: {
+        '/ws1': { roots: [{ id: 'a', name: 'frontend', path: '/p/frontend', createdAt: 1, updatedAt: 1 }] },
+        '/ws2': { roots: [
+          { id: 'b', name: 'frontend-2', path: '/p/frontend', createdAt: 1, updatedAt: 1 },
+          { id: 'c', name: 'backend', path: '/p/backend', createdAt: 1, updatedAt: 1 },
+        ] },
+      },
+    }), 'utf8')
+    const migrated = new MultiRootStore(file)
+    const roots = await migrated.list()
+    // Duplicate paths collapse across workspaces; order follows the file.
+    expect(roots.map(root => root.name)).toEqual(['frontend', 'backend'])
+    // The migrated shape persists as version 2.
+    const raw = JSON.parse(await readFile(file, 'utf8')) as { version: number; roots: unknown[] }
+    expect(raw.version).toBe(2)
+  })
+
+  it('writes a valid JSON shape with version 2', async () => {
+    await store.add({ name: 'frontend', path: '/p/frontend' })
+    const raw = JSON.parse(await readFile(file, 'utf8')) as { version: number; roots: unknown[] }
+    expect(raw.version).toBe(2)
+    expect(raw.roots).toHaveLength(1)
   })
 })

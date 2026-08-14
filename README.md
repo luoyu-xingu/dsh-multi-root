@@ -1,26 +1,30 @@
 # dsh-multi-root
 
 Multi-root workspace plugin for the DeepSeek Harness web GUI: attach several
-**independent folders** to one project workspace, manage them from a sidebar
-panel, and let agents list / read / write / glob across every registered root
-through gated host-side tools — a VS Code-style multi-root workspace for DSH.
+**independent folders** to DSH, manage them from a sidebar panel, and let
+agents list / read / write / glob across every registered root through gated
+host-side tools — a VS Code-style multi-root workspace for DSH.
+
+All roots are equal: there is no primary-workspace distinction, and the set
+is shared by every session and agent.
 
 Hot-pluggable via a cordis profile bundle: no DSH source changes.
 
 ## Features
 
 - Sidebar entry `Roots` (`多根`) toggling a management panel in the center column.
-- Attach any number of folders to the **current** workspace (path input or a
-  host directory browser), with optional display aliases.
+- Attach any number of folders (path input or a host directory browser that
+  starts at the **drive level** on Windows — pick C:, D:, ... then drill
+  down), with optional display aliases.
 - Rename, remove, and reorder roots; each row shows live directory status
   (`available` / `directory missing`).
-- Roots persist per workspace in `~/.dsh/dsh-multi-root.json` (directory
-  `0700`, file `0600`, atomic write) — GUI and agents share the same store.
+- Roots persist in `~/.dsh/dsh-multi-root.json` (directory `0700`, file
+  `0600`, atomic write) — GUI and agents share the same store.
 - Agent tools registered into the DSH tool pipeline:
 
   | Tool | Purpose |
   | --- | --- |
-  | `workspace_roots` | List the roots attached to the current workspace (id, name, path, status). |
+  | `workspace_roots` | List all attached roots (id, name, path, status). |
   | `workspace_root_list` | List one directory inside a root. |
   | `workspace_root_read` | Read a text file inside a root (256 KB cap, truncation reported). |
   | `workspace_root_write` | Write (create or overwrite) a text file inside a root; parent directories are created. |
@@ -43,15 +47,19 @@ dsh plugin --profile web add @luoyu-xingu/dsh-multi-root
 ```
 
 `dsh web` then serves the browser half automatically (the package's `dsh.client`
-declaration).
+declaration). The running `dsh web` hot-reloads the profile patch layer, so
+no restart is needed; refresh the page to pick up the panel.
+
+For development iterations the host half also watches its own built `lib/`
+files (`hotReload` config, default on) and re-mounts in place on rebuild —
+rebuild, wait a few seconds, and refresh the browser; no `dsh web` restart.
 
 ## Usage
 
-1. Open a project session (its cwd is the *primary workspace*).
-2. Click the sidebar `Roots` entry.
-3. Attach folders with the path input or the `Browse` dialog; optionally give
-   each one an alias.
-4. Ask the agent to work across folders — it will use `workspace_roots` to
+1. Click the sidebar `Roots` entry.
+2. Attach folders with the path input or the `Browse` dialog (drive level
+   first on Windows); optionally give each one an alias.
+3. Ask the agent to work across folders — it will use `workspace_roots` to
    discover the roots and the other `workspace_root_*` tools to operate inside
    them.
 
@@ -61,8 +69,8 @@ This plugin deliberately bypasses the DSH file sandbox: its operations run
 with the host process permissions. The trust boundary is therefore the root
 set itself, and it is enforced on every operation:
 
-- Roots are only the directories the **user** attached in the GUI for the
-  current workspace; agents can never attach or remove roots.
+- Roots are only the directories the **user** attached in the GUI; agents can
+  never attach or remove roots.
 - Every path is joined root-relative, canonicalized with `fs.realpath`, and
   required to live inside the registered root. Path traversal (`..`,
   absolute paths, drive letters) and symlinked escapes are rejected on read
@@ -88,13 +96,14 @@ The host plugin accepts a schemastery-validated config (composition entry):
 multi-root:
   enabled: true          # master switch for routes, tools, prompt section
   announceToAgent: true  # system-prompt section announcing the plugin
+  hotReload: true        # host half watches its own lib/ and re-mounts on rebuild
 ```
 
 ## Development
 
 ```sh
 pnpm install
-pnpm typecheck   # tsc --noEmit (src + tests)
+pnpm typecheck   # tsc -b (host/client programs) + test program
 pnpm test        # vitest run (store / fs-ops / tools / client smoke)
 pnpm build       # declaration emit + tsdown (lib/ node half + lib/client.js)
 ```

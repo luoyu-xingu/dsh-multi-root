@@ -14,6 +14,7 @@ import z from 'schemastery'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
+import { installSelfHotReload } from './hmr.ts'
 import { GUIDANCE, PLUGIN_NAME, SECTION_ORDER } from './invariant.ts'
 import { makeRoutes } from './routes.ts'
 import { MultiRootStore } from './store.ts'
@@ -40,11 +41,18 @@ export interface Config {
   announceToAgent?: boolean
   /** Master switch for the plugin (routes, tools, prompt section). */
   enabled?: boolean
+  /**
+   * When true (default), the host half watches its own built lib files and
+   * re-mounts in place on rebuild (no dsh web restart). No-op in boots
+   * without the HMR service.
+   */
+  hotReload?: boolean
 }
 
 export const Config: z<Config> = z.object({
   announceToAgent: z.boolean().default(true),
   enabled: z.boolean().default(true),
+  hotReload: z.boolean().default(true),
 })
 
 /**
@@ -65,6 +73,8 @@ export function apply(ctx: Context, config?: Config): void {
     workspaceRootGlobTool(store),
   ]
   const routes = makeRoutes(store)
+
+  if (config?.hotReload ?? true) installSelfHotReload(ctx)
 
   if (config?.announceToAgent ?? true) {
     ctx.effect(() => ctx.systemPrompt.section({

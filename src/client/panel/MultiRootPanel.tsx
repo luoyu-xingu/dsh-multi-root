@@ -1,8 +1,8 @@
 /**
- * The multi-root management panel: lists the roots attached to the current
- * workspace (with live status), attaches folders via a path input or a host
- * directory browser, and supports rename / remove / reorder. All state is
- * plain React — the workspace binding is passed in by the mount wiring.
+ * The multi-root management panel: lists the roots (all equal — there is no
+ * primary workspace), attaches folders via a path input or a host directory
+ * browser that starts at the drive level on Windows, and supports rename /
+ * remove / reorder. All state is plain React.
  * @module dsh-multi-root/client/panel/MultiRootPanel
  */
 
@@ -13,12 +13,10 @@ import { errorMessage, tt } from '../locales.ts'
 import type { PanelController } from './controller.ts'
 import css from './panel.module.css'
 
-/** Panel props: the controller, the wire client, and the bound workspace cwd. */
+/** Panel props: the controller and the wire client. */
 export interface MultiRootPanelProps {
   controller: PanelController
   api: MultiRootApi
-  /** The active session's cwd ('' when no workspace is bound). */
-  workspace: string
 }
 
 /** One root row: status, name, path, and the action buttons. */
@@ -69,38 +67,52 @@ function RootRow(props: {
   )
 }
 
-/** The host directory browser overlay. */
+/** The host directory browser overlay (drive level first on Windows). */
 function BrowseDialog(props: {
   path: string
   dirs: BrowseDir[]
+  drives: BrowseDir[]
   busy: boolean
   onEnter: (path: string) => void
   onUp: () => void
   onSelect: () => void
   onClose: () => void
 }): React.ReactElement {
+  const { path, dirs, drives, busy } = props
+  const atDrives = path === ''
+  const activeDrive = (drive: BrowseDir): boolean => {
+    const prefix = drive.path.replace(/[\\/]+$/, '').toLowerCase()
+    return path.toLowerCase().startsWith(prefix)
+  }
   return (
     <div className={css.overlay} role="dialog" aria-modal="true" aria-label={tt('panel.browse.title')}>
       <div className={css.dialog}>
         <div className={css.dialogHeader}>
           <span>{tt('panel.browse.title')}</span>
-          <button type="button" className={css.iconButton} onClick={props.onClose} disabled={props.busy}>{'\u00d7'}</button>
+          <button type="button" className={css.iconButton} onClick={props.onClose} disabled={busy}>{'\u00d7'}</button>
         </div>
-        <div className={css.dialogPath} title={props.path}>{tt('panel.browse.current')}: {props.path}</div>
+        {drives.length > 0 && (
+          <div className={css.driveBar}>
+            {drives.map(drive => (
+              <button type="button" key={drive.path} className={activeDrive(drive) ? css.driveChipActive : css.driveChip} disabled={busy} onClick={() => { props.onEnter(drive.path) }}>{drive.name}</button>
+            ))}
+          </div>
+        )}
+        <div className={css.dialogPath} title={atDrives ? '' : path}>{atDrives ? tt('panel.browse.drives') : `${tt('panel.browse.current')}: ${path}`}</div>
         <div className={css.dialogDirs}>
-          {props.dirs.map(dir => (
-            <button type="button" key={dir.path} className={css.dirRow} disabled={props.busy} onClick={() => { props.onEnter(dir.path) }}>
+          {dirs.map(dir => (
+            <button type="button" key={dir.path} className={css.dirRow} disabled={busy} onClick={() => { props.onEnter(dir.path) }}>
               <span className={css.dirIcon}>D</span>
               <span className={css.dirName}>{dir.name}</span>
             </button>
           ))}
-          {props.dirs.length === 0 && <div className={css.dirEmpty}>{tt('panel.empty')}</div>}
+          {dirs.length === 0 && !atDrives && <div className={css.dirEmpty}>{tt('panel.empty')}</div>}
         </div>
         <div className={css.dialogFooter}>
-          <button type="button" className={css.miniButton} onClick={props.onUp} disabled={props.busy}>{tt('panel.browse.up')}</button>
+          <button type="button" className={css.miniButton} onClick={props.onUp} disabled={busy || atDrives}>{tt('panel.browse.up')}</button>
           <span className={css.dialogSpacer} />
-          <button type="button" className={css.miniButton} onClick={props.onClose} disabled={props.busy}>{tt('panel.browse.cancel')}</button>
-          <button type="button" className={css.primaryButton} onClick={props.onSelect} disabled={props.busy}>{tt('panel.browse.select')}</button>
+          <button type="button" className={css.miniButton} onClick={props.onClose} disabled={busy}>{tt('panel.browse.cancel')}</button>
+          <button type="button" className={css.primaryButton} onClick={props.onSelect} disabled={busy || atDrives}>{tt('panel.browse.select')}</button>
         </div>
       </div>
     </div>
@@ -109,7 +121,7 @@ function BrowseDialog(props: {
 
 /** The multi-root management panel. */
 export function MultiRootPanel(props: MultiRootPanelProps): React.ReactElement {
-  const { controller, api, workspace } = props
+  const { controller, api } = props
   const [roots, setRoots] = useState<RootView[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -118,19 +130,15 @@ export function MultiRootPanel(props: MultiRootPanelProps): React.ReactElement {
   const [browseOpen, setBrowseOpen] = useState(false)
   const [browsePath, setBrowsePath] = useState('')
   const [browseDirs, setBrowseDirs] = useState<BrowseDir[]>([])
+  const [browseDrives, setBrowseDrives] = useState<BrowseDir[]>([])
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const loadSeq = useRef(0)
 
   const reload = async (): Promise<void> => {
     const seq = ++loadSeq.current
-    if (workspace === '') {
-      setRoots([])
-      setLoadError(null)
-      return
-    }
     try {
-      const result = await api.roots(workspace)
+      const result = await api.roots()
       if (seq !== loadSeq.current) return
       setRoots(result.roots)
       setLoadError(null)
@@ -143,8 +151,7 @@ export function MultiRootPanel(props: MultiRootPanelProps): React.ReactElement {
 
   useEffect(() => {
     void reload()
-    // The workspace binding changes when the user switches sessions.
-  }, [workspace])
+  }, [])
 
   const run = async (action: () => Promise<unknown>): Promise<void> => {
     setBusy(true)
@@ -160,19 +167,19 @@ export function MultiRootPanel(props: MultiRootPanelProps): React.ReactElement {
 
   const add = (): void => {
     void run(async () => {
-      await api.add(workspace, addPath.trim(), addName.trim())
+      await api.add(addPath.trim(), addName.trim())
       setAddPath('')
       setAddName('')
     })
   }
 
   const remove = (id: string): void => {
-    void run(async () => { await api.remove(workspace, id) })
+    void run(async () => { await api.remove(id) })
   }
 
   const commitRename = (id: string): void => {
     void run(async () => {
-      await api.rename(workspace, id, renameValue.trim())
+      await api.rename(id, renameValue.trim())
       setRenamingId(null)
     })
   }
@@ -185,25 +192,37 @@ export function MultiRootPanel(props: MultiRootPanelProps): React.ReactElement {
     const ids = roots.map(root => root.id)
     ids.splice(index, 1)
     ids.splice(target, 0, id)
-    void run(async () => { await api.reorder(workspace, ids) })
+    void run(async () => { await api.reorder(ids) })
+  }
+
+  const landBrowse = (result: { path: string; dirs: BrowseDir[]; drives: BrowseDir[] }): void => {
+    setBrowsePath(result.path)
+    setBrowseDirs(result.dirs)
+    setBrowseDrives(result.drives)
   }
 
   const openBrowse = (): void => {
     setBrowseOpen(true)
     setBrowsePath('')
-    void api.browse('').then(result => { setBrowsePath(result.path); setBrowseDirs(result.dirs) }).catch(error => { setLoadError(errorMessage(error)) })
+    void api.browse('').then(landBrowse).catch(error => { setLoadError(errorMessage(error)) })
   }
 
   const enterBrowse = (path: string): void => {
     setBrowsePath(path)
-    void api.browse(path).then(result => { setBrowsePath(result.path); setBrowseDirs(result.dirs) }).catch(error => { setLoadError(errorMessage(error)) })
+    void api.browse(path).then(landBrowse).catch(error => { setLoadError(errorMessage(error)) })
   }
 
   const browseUp = (): void => {
-    const separator = browsePath.includes('\\') ? '\\' : '/'
     const trimmed = browsePath.replace(/[\\/]+$/, '')
-    const cut = Math.max(trimmed.lastIndexOf(separator), trimmed.indexOf(':') + 1)
-    const parent = cut > 0 ? trimmed.slice(0, cut) : browsePath
+    if (trimmed === '' || trimmed === '/') return
+    // A drive root (`C:`) goes back up to the drive level.
+    if (/^[A-Za-z]:$/.test(trimmed)) {
+      enterBrowse('')
+      return
+    }
+    const separator = trimmed.includes('\\') ? '\\' : '/'
+    const cut = trimmed.lastIndexOf(separator)
+    const parent = cut > 0 ? trimmed.slice(0, cut) : ''
     if (parent !== browsePath) enterBrowse(parent)
   }
 
@@ -219,60 +238,50 @@ export function MultiRootPanel(props: MultiRootPanelProps): React.ReactElement {
         <button type="button" className={css.iconButton} title="close" onClick={() => { controller.close() }}>{'\u00d7'}</button>
       </div>
 
-      {workspace === ''
-        ? <div className={css.empty}>{tt('panel.noWorkspace')}</div>
-        : (
-            <>
-              <div className={css.workspaceRow}>
-                <span className={css.workspaceLabel}>{tt('panel.workspace')}</span>
-                <span className={css.workspacePath} title={workspace}>{workspace}</span>
-              </div>
+      <div className={css.addSection}>
+        <div className={css.addTitle}>{tt('panel.add.title')}</div>
+        <div className={css.addRow}>
+          <input className={css.addInput} value={addPath} placeholder={tt('panel.add.pathPlaceholder')} onChange={event => { setAddPath(event.target.value) }} onKeyDown={event => { if (event.key === 'Enter') add() }} />
+          <button type="button" className={css.miniButton} onClick={openBrowse} disabled={busy}>{tt('panel.add.browse')}</button>
+          <button type="button" className={css.primaryButton} onClick={add} disabled={busy || addPath.trim() === ''}>{tt('panel.add.submit')}</button>
+        </div>
+        <div className={css.addRow}>
+          <input className={css.addInput} value={addName} placeholder={tt('panel.add.namePlaceholder')} onChange={event => { setAddName(event.target.value) }} onKeyDown={event => { if (event.key === 'Enter') add() }} />
+        </div>
+        <div className={css.hint}>{tt('panel.add.hint')}</div>
+      </div>
 
-              <div className={css.addSection}>
-                <div className={css.addTitle}>{tt('panel.add.title')}</div>
-                <div className={css.addRow}>
-                  <input className={css.addInput} value={addPath} placeholder={tt('panel.add.pathPlaceholder')} onChange={event => { setAddPath(event.target.value) }} onKeyDown={event => { if (event.key === 'Enter') add() }} />
-                  <button type="button" className={css.miniButton} onClick={openBrowse} disabled={busy}>{tt('panel.add.browse')}</button>
-                  <button type="button" className={css.primaryButton} onClick={add} disabled={busy || addPath.trim() === ''}>{tt('panel.add.submit')}</button>
-                </div>
-                <div className={css.addRow}>
-                  <input className={css.addInput} value={addName} placeholder={tt('panel.add.namePlaceholder')} onChange={event => { setAddName(event.target.value) }} onKeyDown={event => { if (event.key === 'Enter') add() }} />
-                </div>
-                <div className={css.hint}>{tt('panel.add.hint')}</div>
-              </div>
+      {loadError !== null && <div className={css.error}>{tt('panel.error.load')}: {loadError}</div>}
 
-              {loadError !== null && <div className={css.error}>{tt('panel.error.load')}: {loadError}</div>}
+      <div className={css.rootsList}>
+        {roots === null && <div className={css.empty}>...</div>}
+        {roots !== null && roots.length === 0 && <div className={css.empty}>{tt('panel.empty')}</div>}
+        {roots?.map((root, index) => (
+          <RootRow
+            key={root.id}
+            root={root}
+            index={index}
+            count={roots.length}
+            busy={busy}
+            renaming={renamingId === root.id}
+            renameValue={renameValue}
+            onRenameValue={setRenameValue}
+            onStartRename={() => { setRenamingId(root.id); setRenameValue(root.name) }}
+            onCommitRename={() => { commitRename(root.id) }}
+            onCancelRename={() => { setRenamingId(null) }}
+            onRemove={() => { remove(root.id) }}
+            onMove={direction => { move(root.id, direction) }}
+          />
+        ))}
+      </div>
 
-              <div className={css.rootsList}>
-                {roots === null && <div className={css.empty}>...</div>}
-                {roots !== null && roots.length === 0 && <div className={css.empty}>{tt('panel.empty')}</div>}
-                {roots?.map((root, index) => (
-                  <RootRow
-                    key={root.id}
-                    root={root}
-                    index={index}
-                    count={roots.length}
-                    busy={busy}
-                    renaming={renamingId === root.id}
-                    renameValue={renameValue}
-                    onRenameValue={setRenameValue}
-                    onStartRename={() => { setRenamingId(root.id); setRenameValue(root.name) }}
-                    onCommitRename={() => { commitRename(root.id) }}
-                    onCancelRename={() => { setRenamingId(null) }}
-                    onRemove={() => { remove(root.id) }}
-                    onMove={direction => { move(root.id, direction) }}
-                  />
-                ))}
-              </div>
-
-              <div className={css.footer}>{tt('panel.footer.hint')}</div>
-            </>
-          )}
+      <div className={css.footer}>{tt('panel.footer.hint')}</div>
 
       {browseOpen && (
         <BrowseDialog
           path={browsePath}
           dirs={browseDirs}
+          drives={browseDrives}
           busy={busy}
           onEnter={enterBrowse}
           onUp={browseUp}
