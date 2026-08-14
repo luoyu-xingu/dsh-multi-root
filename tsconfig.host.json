@@ -1,0 +1,40 @@
+{
+  // Host-half program (node process side): the roots store, the fs-ops gate,
+  // the routes, and the agent tools. SDK types resolve from the @deepseek-ai/*
+  // npm packages declared in devDependencies (official NPM SDK), never from a
+  // source checkout.
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "lib": [
+      "ES2024"
+    ],
+    "strict": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/index.ts",
+    "src/invariant.ts",
+    "src/store.ts",
+    "src/fs-ops.ts",
+    "src/tools.ts",
+    "src/routes.ts",
+    "src/core/**/*.ts"
+  ]
+}

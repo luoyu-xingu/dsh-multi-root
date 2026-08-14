@@ -1,0 +1,14 @@
+{
+  // Solution file: host and client programs compile independently so their
+  // type worlds never mix (the host SDK stack merges `sessions` as the host
+  // session store; the client program must resolve the client ISessions face).
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.host.json"
+    },
+    {
+      "path": "./tsconfig.client.json"
+    }
+  ]
+}

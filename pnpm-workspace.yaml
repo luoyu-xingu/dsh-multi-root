@@ -1,0 +1,3 @@
+# pnpm 11 approve-builds: allow the esbuild postinstall binary build.
+allowBuilds:
+  esbuild: true

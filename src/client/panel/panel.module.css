@@ -1,0 +1,426 @@
+/**
+ * Panel surface styles. Neutral tokens that follow the shell's dark marker
+ * (body[data-ds-dark-theme]) with CSS only, mirroring the family plugins.
+ */
+
+:root {
+  --mr-text: #24292f;
+  --mr-text-dim: #6a737d;
+  --mr-bg: #ffffff;
+  --mr-bg-soft: #f6f8fa;
+  --mr-border: #d0d7de;
+  --mr-accent: #2f81f7;
+  --mr-accent-text: #ffffff;
+  --mr-danger: #cf222e;
+  --mr-ok: #1a7f37;
+  --mr-warn: #bf8700;
+}
+
+body[data-ds-dark-theme] {
+  --mr-text: #e6edf3;
+  --mr-text-dim: #8b949e;
+  --mr-bg: #0d1117;
+  --mr-bg-soft: #161b22;
+  --mr-border: #30363d;
+  --mr-accent: #2f81f7;
+  --mr-accent-text: #ffffff;
+  --mr-danger: #f85149;
+  --mr-ok: #3fb950;
+  --mr-warn: #d29922;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  gap: 10px;
+  background: var(--mr-bg);
+  color: var(--mr-text);
+  font-size: 13px;
+  overflow-y: auto;
+}
+
+/* The injected panel container: fills the column, hidden while inactive. */
+.view {
+  height: 100%;
+  min-height: 0;
+}
+
+html:not([data-dsh-multi-root-active]) [data-dsh-multi-root-view] {
+  display: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.workspaceRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--mr-bg-soft);
+  border: 1px solid var(--mr-border);
+  border-radius: 6px;
+  flex: none;
+}
+
+.workspaceLabel {
+  font-size: 11px;
+  color: var(--mr-text-dim);
+}
+
+.workspacePath {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+}
+
+.addTitle {
+  font-size: 12px;
+  color: var(--mr-text-dim);
+}
+
+.addRow {
+  display: flex;
+  gap: 6px;
+}
+
+.addInput {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--mr-border);
+  border-radius: 6px;
+  background: var(--mr-bg-soft);
+  color: var(--mr-text);
+  font-size: 12px;
+  outline: none;
+}
+
+.addInput:focus {
+  border-color: var(--mr-accent);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--mr-text-dim);
+}
+
+.error {
+  padding: 6px 10px;
+  border: 1px solid var(--mr-danger);
+  border-radius: 6px;
+  color: var(--mr-danger);
+  font-size: 12px;
+  flex: none;
+}
+
+.rootsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.rootRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 1px solid var(--mr-border);
+  border-radius: 6px;
+  background: var(--mr-bg-soft);
+}
+
+.statusDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mr-ok);
+}
+
+.statusMissing {
+  background: var(--mr-warn);
+}
+
+.rootInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rootName {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.rootPath {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  color: var(--mr-text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rootActions {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.renameRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.renameInput {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--mr-accent);
+  border-radius: 4px;
+  background: var(--mr-bg);
+  color: var(--mr-text);
+  font-size: 12px;
+  outline: none;
+}
+
+.iconButton {
+  flex: none;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 1px solid var(--mr-border);
+  border-radius: 4px;
+  background: var(--mr-bg);
+  color: var(--mr-text-dim);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+  color: var(--mr-text);
+  border-color: var(--mr-accent);
+}
+
+.iconButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.miniButton {
+  flex: none;
+  padding: 5px 10px;
+  border: 1px solid var(--mr-border);
+  border-radius: 6px;
+  background: var(--mr-bg);
+  color: var(--mr-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.miniButton:hover:not(:disabled) {
+  border-color: var(--mr-accent);
+}
+
+.miniButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.primaryButton {
+  flex: none;
+  padding: 5px 12px;
+  border: 1px solid var(--mr-accent);
+  border-radius: 6px;
+  background: var(--mr-accent);
+  color: var(--mr-accent-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.primaryButton:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.primaryButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.empty {
+  padding: 14px 10px;
+  color: var(--mr-text-dim);
+  font-size: 12px;
+  text-align: center;
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: 1px solid var(--mr-border);
+  font-size: 11px;
+  color: var(--mr-text-dim);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  flex: none;
+}
+
+/* Sidebar entry row (plain DOM, outside the panel). */
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--mr-text);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.entry:hover {
+  background: var(--mr-bg-soft);
+}
+
+.entry[data-active] {
+  background: var(--mr-bg-soft);
+  color: var(--mr-accent);
+}
+
+.entryIcon {
+  display: inline-flex;
+  flex: none;
+  color: currentColor;
+}
+
+.entryLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Browse overlay. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(520px, calc(100vw - 40px));
+  max-height: 70vh;
+  padding: 12px;
+  gap: 8px;
+  border: 1px solid var(--mr-border);
+  border-radius: 8px;
+  background: var(--mr-bg);
+  color: var(--mr-text);
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.dialogPath {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  color: var(--mr-text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dialogDirs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  border: 1px solid var(--mr-border);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.dirRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--mr-text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dirRow:hover {
+  background: var(--mr-bg-soft);
+}
+
+.dirIcon {
+  flex: none;
+  color: var(--mr-accent);
+}
+
+.dirName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dirEmpty {
+  padding: 12px;
+  color: var(--mr-text-dim);
+  font-size: 12px;
+  text-align: center;
+}
+
+.dialogFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dialogSpacer {
+  flex: 1;
+}
