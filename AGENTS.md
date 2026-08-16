@@ -47,15 +47,32 @@ pnpm build       # tsc -b && tsdown
 ## 本机热部署（dsh web 不重启）
 
 本机 profile（`~/.dsh/profiles/web`）以别名
-`@luoyu-xingu/dsh-multi-root-live3` 链接到部署目录
-`E:\dsh_plugins\dsh-multi-root-live2`（真实拷贝 + node_modules junction），
+`@luoyu-xingu/dsh-multi-root-live3` 安装：profile 里的
+`node_modules/@luoyu-xingu/dsh-multi-root-live3` 是 junction，直接指向源仓库
+`E:\dsh_plugins\dsh-multi-root`（没有中间拷贝目录，web 加载的就是仓库 lib），
 patch 行在 profile 的 `cordis.patch.yml`。宿主半区自带 self hot reload
 （`src/hmr.ts`）：监听自身 lib 文件，变更即清模块缓存并原位重挂载。
+
+**关键约束（客户端 bundle 的注册 id 必须等于 loader entry 名）**：dsh web
+的 boot manifest 按 loader entry 名（`-live3`）请求并核对 client bundle，
+bundle 头部的 `__ModuleLoader__.load({ id })` 必须注册同名，否则浏览器端
+报 `loaded without registering "<entry名>"`，整个 GUI 无法启动。tsdown 的
+ID 默认取包本名 `@luoyu-xingu/dsh-multi-root`，别名部署必须用环境变量构建。
 更新流程：
 
-1. `pnpm typecheck && pnpm test && pnpm build`
-2. `Copy-Item lib\* E:\dsh_plugins\dsh-multi-root-live2\lib\ -Recurse -Force`
-3. 等约 10 秒（自愈重载生效），浏览器刷新即得新客户端 bundle。
+1. `pnpm typecheck && pnpm test`
+2. 用 live3 别名构建（覆盖默认 id）：
+   `set DSH_PLUGIN_CLIENT_ID=@luoyu-xingu/dsh-multi-root-live3 && pnpm bundle`
+3. 产物直接落在源仓库 `lib/`（profile junction 指向仓库，web 即从仓库 lib
+   加载，无需任何拷贝）；等约 10 秒（自愈重载生效），浏览器刷新即得新客户端
+   bundle（rev 随内容哈希自动变化）。
+
+移除插件（必须两步都做，缺一即 web 无法启动）：
+
+1. 删除 `cordis.patch.yml` 里的 insert 条目（只删包不删条目 → 宿主启动报
+   `Cannot find package '@luoyu-xingu/dsh-multi-root-live3'`）。
+2. 删除 profile 的 `node_modules/@luoyu-xingu/dsh-multi-root-live3`
+   junction（只删链接本身，勿用 -Recurse；源仓库本身不动）。
 
 注意：ESM 模块缓存按「真实路径 URL」钉死，若 self-HMR 本身被改坏，恢复
 需换新别名（新行名）+ 新真实目录冷激活一次；patch 行名必须保留

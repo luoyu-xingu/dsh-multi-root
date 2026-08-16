@@ -20,8 +20,14 @@ import { basename, dirname, resolve as resolvePath } from 'node:path'
 import type { UserConfig } from 'tsdown'
 import { transform } from 'lightningcss'
 
-/** Plugin id, stamped into the module-loader handoff and the injected style tags. */
-const ID = '@luoyu-xingu/dsh-multi-root'
+/**
+ * Plugin id, stamped into the module-loader handoff and the injected style tags.
+ * The web shell's boot manifest keys every client bundle by its loader entry
+ * name, so a `-live` alias deployment must build with
+ * `DSH_PLUGIN_CLIENT_ID=<alias>`; a mismatch fails the GUI boot with
+ * "loaded without registering".
+ */
+const ID = process.env.DSH_PLUGIN_CLIENT_ID ?? '@luoyu-xingu/dsh-multi-root'
 
 /** The module specifiers the web shell shares into the frozen module table. */
 const PLATFORM_MODULES = [
