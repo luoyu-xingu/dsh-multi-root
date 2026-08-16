@@ -1,7 +1,7 @@
 {
   "name": "@luoyu_xingu/dsh-multi-root",
   "description": "Multi-root workspace plugin for the dsh web GUI: attach several independent folders to one project workspace, manage them in a sidebar panel, and let agents read, list, write, and glob across every registered root through gated host-side tools. Hot-pluggable via a cordis profile bundle, no dsh source changes.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "packageManager": "pnpm@11.21.0",
   "engines": {
