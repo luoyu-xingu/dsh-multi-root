@@ -15,7 +15,8 @@ Hot-pluggable via a cordis profile bundle: no DSH source changes.
 - Sidebar entry `Roots` (`多根`) toggling a management panel in the center column.
 - Attach any number of folders (path input or a host directory browser that
   starts at the **drive level** on Windows — pick C:, D:, ... then drill
-  down), with optional display aliases.
+  down — and at the home directory on Linux/macOS, where Up reaches the
+  filesystem root), with optional display aliases.
 - Rename, remove, and reorder roots; each row shows live directory status
   (`available` / `directory missing`).
 - Roots persist in `~/.dsh/dsh-multi-root.json` (directory `0700`, file
@@ -39,20 +40,19 @@ Hot-pluggable via a cordis profile bundle: no DSH source changes.
 The plugin is a cordis bundle package. Activate it in the web profile:
 
 ```sh
-# from a source checkout
-dsh plugin --profile web add link:<path>/dsh-multi-root
+# from a source checkout (file: installs a self-contained copy, no junction)
+dsh plugin --profile web add file:<path>/dsh-multi-root
 
 # from npm (after publishing)
 dsh plugin --profile web add @luoyu-xingu/dsh-multi-root
 ```
 
 `dsh web` then serves the browser half automatically (the package's `dsh.client`
-declaration). The running `dsh web` hot-reloads the profile patch layer, so
-no restart is needed; refresh the page to pick up the panel.
-
-For development iterations the host half also watches its own built `lib/`
-files (`hotReload` config, default on) and re-mounts in place on rebuild —
-rebuild, wait a few seconds, and refresh the browser; no `dsh web` restart.
+declaration), and the package's own `cordis.patch.yml` inserts its loader row.
+**Restart `dsh web` after install or after rebuilding `lib/`** — the web profile
+disables the cordis HMR service, so file changes are not hot-loaded; the host
+also validates the bundle revision against the startup file hash, and a stale
+process answers old revisions with 404 (`bundle script ... failed to load`).
 
 ## Usage
 

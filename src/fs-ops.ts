@@ -17,7 +17,7 @@ import fg from 'fast-glob'
 import { existsSync } from 'node:fs'
 import { lstat, mkdir, open, readdir, realpath, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
-import type { BrowseDir, DirEntryView, RootEntry, RootView } from './core/types.ts'
+import type { BrowseDir, BrowseResult, DirEntryView, RootEntry, RootView } from './core/types.ts'
 import { MAX_GLOB_MATCHES, MAX_LIST_ENTRIES, MAX_READ_BYTES, MAX_WRITE_BYTES } from './invariant.ts'
 import type { MultiRootStore } from './store.ts'
 
@@ -256,21 +256,28 @@ export async function globInRoot(root: string, pattern: string, maxResults: numb
 /**
  * List the directories of one path (the GUI picker feed) plus the drive
  * roster. An empty path opens at the drive level on Windows (so the user
- * picks a drive instead of silently defaulting to the first one) and at the
- * home directory elsewhere.
+ * picks a drive instead of silently defaulting to the first one) and lists
+ * the home directory elsewhere. The response carries the host path
+ * separator so the browser half never has to guess it (a backslash is a
+ * legal filename character on POSIX systems).
  */
-export async function browseDirs(path?: string): Promise<{ path: string; dirs: BrowseDir[]; drives: BrowseDir[] }> {
+export async function browseDirs(path?: string): Promise<BrowseResult> {
   const drives = listDrives()
+  const separator: BrowseResult['separator'] = process.platform === 'win32' ? '\\' : '/'
   if (typeof path !== 'string' || path === '') {
-    if (drives.length > 0) return { path: '', dirs: drives, drives }
-    return { path: homeBase(), dirs: [], drives }
+    if (drives.length > 0) return { path: '', dirs: drives, drives, separator }
+    return browsePath(homeBase(), drives, separator)
   }
-  const base = path
+  return browsePath(path, drives, separator)
+}
+
+/** List one directory path's subdirectories (never throws; degrades to an empty listing). */
+async function browsePath(base: string, drives: BrowseDir[], separator: BrowseResult['separator']): Promise<BrowseResult> {
   try {
     const info = await stat(base)
-    if (!info.isDirectory()) return { path: base, dirs: [], drives }
+    if (!info.isDirectory()) return { path: base, dirs: [], drives, separator }
   } catch {
-    return { path: base, dirs: [], drives }
+    return { path: base, dirs: [], drives, separator }
   }
   try {
     const dirents = await readdir(base, { withFileTypes: true })
@@ -278,9 +285,9 @@ export async function browseDirs(path?: string): Promise<{ path: string; dirs: B
       .filter(dirent => dirent.isDirectory())
       .map(dirent => ({ name: dirent.name, path: join(base, dirent.name) }))
       .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
-    return { path: base, dirs, drives }
+    return { path: base, dirs, drives, separator }
   } catch {
-    return { path: base, dirs: [], drives }
+    return { path: base, dirs: [], drives, separator }
   }
 }
 

@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import type { BrowseDir, RootView } from '../../core/types.ts'
+import type { BrowseDir, BrowseResult, RootView } from '../../core/types.ts'
 import type { MultiRootApi } from '../api.ts'
 import { errorMessage, tt } from '../locales.ts'
 import type { PanelController } from './controller.ts'
@@ -70,8 +70,8 @@ function RootRow(props: {
 /** The host directory browser overlay (drive level first on Windows). */
 function BrowseDialog(props: {
   path: string
-  dirs: BrowseDir[]
-  drives: BrowseDir[]
+  dirs: readonly BrowseDir[]
+  drives: readonly BrowseDir[]
   busy: boolean
   onEnter: (path: string) => void
   onUp: () => void
@@ -129,8 +129,9 @@ export function MultiRootPanel(props: MultiRootPanelProps): React.ReactElement {
   const [addName, setAddName] = useState('')
   const [browseOpen, setBrowseOpen] = useState(false)
   const [browsePath, setBrowsePath] = useState('')
-  const [browseDirs, setBrowseDirs] = useState<BrowseDir[]>([])
-  const [browseDrives, setBrowseDrives] = useState<BrowseDir[]>([])
+  const [browseDirs, setBrowseDirs] = useState<BrowseResult['dirs']>([])
+  const [browseDrives, setBrowseDrives] = useState<BrowseResult['drives']>([])
+  const [browseSeparator, setBrowseSeparator] = useState<BrowseResult['separator']>('/')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const loadSeq = useRef(0)
@@ -195,10 +196,11 @@ export function MultiRootPanel(props: MultiRootPanelProps): React.ReactElement {
     void run(async () => { await api.reorder(ids) })
   }
 
-  const landBrowse = (result: { path: string; dirs: BrowseDir[]; drives: BrowseDir[] }): void => {
+  const landBrowse = (result: BrowseResult): void => {
     setBrowsePath(result.path)
     setBrowseDirs(result.dirs)
     setBrowseDrives(result.drives)
+    setBrowseSeparator(result.separator)
   }
 
   const openBrowse = (): void => {
@@ -214,15 +216,22 @@ export function MultiRootPanel(props: MultiRootPanelProps): React.ReactElement {
 
   const browseUp = (): void => {
     const trimmed = browsePath.replace(/[\\/]+$/, '')
-    if (trimmed === '' || trimmed === '/') return
-    // A drive root (`C:`) goes back up to the drive level.
-    if (/^[A-Za-z]:$/.test(trimmed)) {
+    if (trimmed === '') return
+    // The host tells us the separator (a backslash is a legal filename
+    // character on POSIX, so guessing from the path content is wrong there).
+    if (browseSeparator === '/' && trimmed === '/') return
+    // A Windows drive root (`C:`) goes back up to the drive level.
+    if (browseSeparator === '\\' && /^[A-Za-z]:$/.test(trimmed)) {
       enterBrowse('')
       return
     }
-    const separator = trimmed.includes('\\') ? '\\' : '/'
-    const cut = trimmed.lastIndexOf(separator)
-    const parent = cut > 0 ? trimmed.slice(0, cut) : ''
+    const cut = trimmed.lastIndexOf(browseSeparator)
+    // On POSIX the parent of a top-level directory is the filesystem root `/`.
+    const parent = browseSeparator === '/' && cut === 0
+      ? '/'
+      : cut > 0
+        ? trimmed.slice(0, cut)
+        : ''
     if (parent !== browsePath) enterBrowse(parent)
   }
 

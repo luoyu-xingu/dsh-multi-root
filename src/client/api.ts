@@ -6,14 +6,9 @@
  */
 
 import { API } from '../invariant.ts'
-import type { BrowseDir, RootView } from '../core/types.ts'
+import type { BrowseResult, RootView } from '../core/types.ts'
 
-/** One browse listing: directories of a path plus the drive roster. */
-export interface BrowseResult {
-  path: string
-  dirs: BrowseDir[]
-  drives: BrowseDir[]
-}
+export type { BrowseResult }
 
 /** Typed envelope reader: the family returns `{ error }` on failure. */
 async function request<T>(path: string, body?: Record<string, unknown>): Promise<T> {

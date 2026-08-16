@@ -10,7 +10,8 @@ DeepSeek Harness Web GUI 的多根工作区插件：给 DSH 挂载多个**独立
 
 - 侧边栏入口 `多根`（`Roots`），在中间列打开管理面板。
 - 挂载任意数量的文件夹（路径输入或宿主目录浏览器；Windows 上浏览从
-  **盘符级**开始——先选 C:、D:… 再逐级进入），可选显示别名。
+  **盘符级**开始——先选 C:、D:… 再逐级进入；Linux/macOS 从家目录开始，
+  可沿「上一级」直达文件系统根 `/`），可选显示别名。
 - 支持重命名、移除、排序；每行显示目录实时状态（可用 / 目录缺失）。
 - 根目录持久化在 `~/.dsh/dsh-multi-root.json`（目录 0700、文件 0600、
   原子写入）——GUI 与 agent 共享同一份配置。
@@ -33,19 +34,18 @@ DeepSeek Harness Web GUI 的多根工作区插件：给 DSH 挂载多个**独立
 插件是 cordis bundle 包，在 web profile 中激活：
 
 ```sh
-# 源码 checkout
-dsh plugin --profile web add link:<path>/dsh-multi-root
+# 源码 checkout（file: 安装为自包含拷贝，无 junction 外链）
+dsh plugin --profile web add file:<path>/dsh-multi-root
 
 # npm（发布后）
 dsh plugin --profile web add @luoyu-xingu/dsh-multi-root
 ```
 
-`dsh web` 会依据包内 `dsh.client` 声明自动伺服浏览器半区。运行中的
-`dsh web` 会热重载 profile patch 层，无需重启；刷新页面即可看到面板。
-
-开发迭代时宿主半区还会监听自身构建产物 `lib/`（`hotReload` 配置，默认开），
-重新构建后自动原位重挂载——构建 → 等几秒 → 刷新浏览器，全程无需重启
-`dsh web`。
+`dsh web` 会依据包内 `dsh.client` 声明自动伺服浏览器半区，包自带的
+`cordis.patch.yml` 负责插入 loader 行。**安装或重新构建 `lib/` 后需重启
+`dsh web`**——web profile 禁用了 cordis HMR 服务，文件变更不会热加载；
+宿主还会按启动时的文件哈希校验 bundle rev，旧进程对旧 rev 返回 404
+（`bundle script ... failed to load`）。
 
 ## 使用
 

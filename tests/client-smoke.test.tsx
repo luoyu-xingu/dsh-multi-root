@@ -83,8 +83,8 @@ describe('MultiRootPanel', () => {
     const api = {
       roots: vi.fn(async () => ({ roots: [] })),
       browse: vi.fn(async (path: string) => path === ''
-        ? { path: '', dirs: [{ name: 'C:', path: 'C:\\' }, { name: 'D:', path: 'D:\\' }], drives: [{ name: 'C:', path: 'C:\\' }, { name: 'D:', path: 'D:\\' }] }
-        : { path, dirs: [], drives: [{ name: 'C:', path: 'C:\\' }] }),
+        ? { path: '', dirs: [{ name: 'C:', path: 'C:\\' }, { name: 'D:', path: 'D:\\' }], drives: [{ name: 'C:', path: 'C:\\' }, { name: 'D:', path: 'D:\\' }], separator: '\\' }
+        : { path, dirs: [], drives: [{ name: 'C:', path: 'C:\\' }], separator: '\\' }),
     } as unknown as MultiRootApi
     await act(async () => {
       const root = createRoot(container)
@@ -100,6 +100,54 @@ describe('MultiRootPanel', () => {
       expect(container.textContent).toContain('选择盘符')
       expect(container.textContent).toContain('C:')
       expect(container.textContent).toContain('D:')
+    })
+  })
+
+  it('browses up to the filesystem root on POSIX', async () => {
+    const calls: string[] = []
+    const listings: Record<string, { path: string; dirs: Array<{ name: string; path: string }> }> = {
+      '': { path: '/home/alice', dirs: [{ name: 'proj', path: '/home/alice/proj' }] },
+      '/home/alice': { path: '/home/alice', dirs: [{ name: 'proj', path: '/home/alice/proj' }] },
+      '/home': { path: '/home', dirs: [{ name: 'alice', path: '/home/alice' }] },
+      '/': { path: '/', dirs: [{ name: 'usr', path: '/usr' }] },
+    }
+    const api = {
+      roots: vi.fn(async () => ({ roots: [] })),
+      browse: vi.fn(async (path: string) => {
+        calls.push(path)
+        const row = listings[path] ?? { path, dirs: [] }
+        return { ...row, drives: [], separator: '/' }
+      }),
+    } as unknown as MultiRootApi
+    await act(async () => {
+      const root = createRoot(container)
+      root.render(<MultiRootPanel controller={new PanelController()} api={api} />)
+      cleanup = () => { root.unmount() }
+    })
+    await act(async () => {
+      const button = Array.from(container.querySelectorAll('button')).find(el => el.textContent === '浏览')
+      button?.click()
+    })
+    await vi.waitFor(() => {
+      expect(container.textContent).toContain('/home/alice')
+      expect(container.textContent).toContain('proj')
+    })
+    // Up: /home/alice -> /home -> / (the root must be reachable).
+    await act(async () => {
+      const up = Array.from(container.querySelectorAll('button')).find(el => el.textContent === '上一级')
+      up?.click()
+    })
+    await vi.waitFor(() => {
+      expect(calls).toContain('/home')
+    })
+    await act(async () => {
+      const up = Array.from(container.querySelectorAll('button')).find(el => el.textContent === '上一级')
+      up?.click()
+    })
+    await vi.waitFor(() => {
+      // The root listing renders the `usr` directory (prefixed by the D icon).
+      expect(container.textContent).toContain('usr')
+      expect(calls).toContain('/')
     })
   })
 })

@@ -135,17 +135,33 @@ describe('read / write / list / glob roundtrips', () => {
       expect(level.drives.length).toBeGreaterThan(0)
       expect(level.dirs.map(entry => entry.name)).toEqual(level.drives.map(entry => entry.name))
       expect(level.dirs.every(entry => /^[A-Z]:$/.test(entry.name))).toBe(true)
+      expect(level.separator).toBe('\\')
       // Entering one drive lists its directories and keeps the drive roster.
       const inside = await browseDirs(level.dirs[0].path)
       expect(inside.path).toBe(level.dirs[0].path)
       expect(inside.drives.length).toBeGreaterThan(0)
     } else {
+      // An empty path opens at the home directory and lists its subdirectories
+      // (the picker must not open empty on POSIX), with the '/' separator.
       const result = await browseDirs('')
       expect(result.drives).toEqual([])
       expect(result.path).not.toBe('')
+      expect(result.separator).toBe('/')
+      expect(result.dirs.every(entry => entry.path.startsWith(result.path))).toBe(true)
     }
     const empty = await browseDirs(join(dir, 'missing'))
     expect(empty.dirs).toEqual([])
+  })
+
+  it('lists the subdirectories of a given path with the host separator', async () => {
+    const base = join(dir, 'browse')
+    await mkdir(join(base, 'a'), { recursive: true })
+    await mkdir(join(base, 'b'))
+    const result = await browseDirs(base)
+    expect(result.path).toBe(base)
+    expect(result.dirs.map(entry => entry.name)).toEqual(['a', 'b'])
+    expect(result.dirs.every(entry => entry.path.startsWith(base))).toBe(true)
+    expect(result.separator).toBe(process.platform === 'win32' ? '\\' : '/')
   })
 
   it('rejects symlinked escapes on read and write', async () => {

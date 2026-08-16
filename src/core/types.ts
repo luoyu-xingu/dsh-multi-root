@@ -39,3 +39,12 @@ export interface BrowseDir {
   readonly name: string
   readonly path: string
 }
+
+/** One directory browse response: the picker feed, the drive roster, and the host separator. */
+export interface BrowseResult {
+  readonly path: string
+  readonly dirs: readonly BrowseDir[]
+  readonly drives: readonly BrowseDir[]
+  /** The host path separator; the client uses it to compute the Up parent. */
+  readonly separator: '/' | '\\'
+}
