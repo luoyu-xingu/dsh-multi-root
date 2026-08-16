@@ -2,7 +2,7 @@
  * The panel controller: a tiny store driving the sidebar entry highlight and
  * the panel view visibility. Plain TS so both the DOM-level sidebar entry and
  * the React panel can subscribe without a shared runtime.
- * @module @luoyu-xingu/dsh-multi-root/client/panel/controller
+ * @module @luoyu_xingu/dsh-multi-root/client/panel/controller
  */
 
 /** One controller snapshot. */

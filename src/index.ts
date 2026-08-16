@@ -1,12 +1,12 @@
 /**
- * @luoyu-xingu/dsh-multi-root — host half. Mounts the durable roots store
+ * @luoyu_xingu/dsh-multi-root — host half. Mounts the durable roots store
  * (~/.dsh/dsh-multi-root.json), the /api/dsh-multi-root route family
  * (loopback-only), the agent tools (workspace_roots, workspace_root_list,
  * workspace_root_read, workspace_root_write, workspace_root_glob), and a
  * system-prompt announcement. The browser half (./client) renders the sidebar
  * entry and the management panel. Everything rides the official NPM SDK —
  * no dsh source changes.
- * @module @luoyu-xingu/dsh-multi-root
+ * @module @luoyu_xingu/dsh-multi-root
  */
 
 import type { Context } from '@deepseek-ai/cordis'

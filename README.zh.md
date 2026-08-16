@@ -38,7 +38,7 @@ DeepSeek Harness Web GUI 的多根工作区插件：给 DSH 挂载多个**独立
 
 ```sh
 # 1. 安装插件到 web profile（底层是 pnpm 语义）
-dsh plugin --profile web add @luoyu-xingu/dsh-multi-root
+dsh plugin --profile web add @luoyu_xingu/dsh-multi-root
 
 # 2. 启动 web GUI（Ctrl+C 停止；--port 可改端口）
 dsh web
@@ -46,19 +46,19 @@ dsh web
 
 在浏览器打开 `dsh web` 打印的地址（默认 `http://127.0.0.1:3080`）。侧边栏
 出现 `多根`（`Roots`）入口，点击即可挂载文件夹。可用
-`dsh plugin --profile web ls @luoyu-xingu/dsh-multi-root` 验证安装。
+`dsh plugin --profile web ls @luoyu_xingu/dsh-multi-root` 验证安装。
 
 后续升级：
 
 ```sh
-dsh plugin --profile web update @luoyu-xingu/dsh-multi-root
+dsh plugin --profile web update @luoyu_xingu/dsh-multi-root
 dsh web   # 重启
 ```
 
 卸载：
 
 ```sh
-dsh plugin --profile web remove @luoyu-xingu/dsh-multi-root
+dsh plugin --profile web remove @luoyu_xingu/dsh-multi-root
 ```
 
 ### 方式二：源码下载（clone 本仓库）
@@ -82,9 +82,9 @@ dsh web
 ```sh
 pnpm build
 # PowerShell：
-Copy-Item lib\* $env:USERPROFILE\.dsh\profiles\web\node_modules\@luoyu-xingu\dsh-multi-root\lib\ -Recurse -Force
+Copy-Item lib\* $env:USERPROFILE\.dsh\profiles\web\node_modules\@luoyu_xingu\dsh-multi-root\lib\ -Recurse -Force
 # bash：
-cp -r lib/* ~/.dsh/profiles/web/node_modules/@luoyu-xingu/dsh-multi-root/lib/
+cp -r lib/* ~/.dsh/profiles/web/node_modules/@luoyu_xingu/dsh-multi-root/lib/
 dsh web   # 重启
 ```
 

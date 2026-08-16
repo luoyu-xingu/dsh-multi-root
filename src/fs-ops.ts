@@ -10,7 +10,7 @@
  * host process permissions) — the trust boundary is the root set itself:
  * only directories the user attached in the GUI are reachable, and only from
  * within their subtree.
- * @module @luoyu-xingu/dsh-multi-root/fs-ops
+ * @module @luoyu_xingu/dsh-multi-root/fs-ops
  */
 
 import fg from 'fast-glob'

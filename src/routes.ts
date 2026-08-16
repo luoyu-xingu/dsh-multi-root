@@ -5,7 +5,7 @@
  * trust fence plus browser same-origin markers — these endpoints read and
  * attach host directories, so LAN-exposed dsh web deployments must not serve
  * them.
- * @module @luoyu-xingu/dsh-multi-root/routes
+ * @module @luoyu_xingu/dsh-multi-root/routes
  */
 
 import type { IncomingMessage, ServerResponse } from 'node:http'

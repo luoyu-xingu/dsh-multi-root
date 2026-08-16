@@ -2,11 +2,11 @@
  * Package invariants shared by both halves: API paths, operation caps, and
  * the model-facing guidance text. This file must stay platform-free — the
  * browser bundle compiles it too, so no node imports are allowed here.
- * @module @luoyu-xingu/dsh-multi-root/invariant
+ * @module @luoyu_xingu/dsh-multi-root/invariant
  */
 
 /** Npm identity, used for the module-loader handoff and the injected style tags. */
-export const PLUGIN_ID = '@luoyu-xingu/dsh-multi-root'
+export const PLUGIN_ID = '@luoyu_xingu/dsh-multi-root'
 
 /** Stable cordis plugin name (the bundle row id). */
 export const PLUGIN_NAME = 'multi-root'

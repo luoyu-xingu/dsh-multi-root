@@ -9,7 +9,7 @@
  * interleave writes. A missing or unparseable file degrades to an empty
  * store (the roots are re-addable state, not secrets). Version-1 files
  * (per-workspace keyed) are migrated into the flat list on load.
- * @module @luoyu-xingu/dsh-multi-root/store
+ * @module @luoyu_xingu/dsh-multi-root/store
  */
 
 import { randomUUID } from 'node:crypto'

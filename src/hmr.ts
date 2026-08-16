@@ -13,7 +13,7 @@
  * entry disposal runs this plugin's disposers, which await the HMR
  * registration's in-flight refresh task — awaiting that task from inside
  * itself would deadlock, so the refresh callback only schedules and returns.
- * @module @luoyu-xingu/dsh-multi-root/hmr
+ * @module @luoyu_xingu/dsh-multi-root/hmr
  */
 
 import { createRequire } from 'node:module'
@@ -60,7 +60,7 @@ export function installSelfHotReload(ctx: Context): void {
     // cache pin), so match every row whose name belongs to this package.
     for (const entry of loader.entries()) {
       const name = entry.options?.name
-      if (typeof name === 'string' && name.startsWith('@luoyu-xingu/dsh-multi-root')) return entry
+      if (typeof name === 'string' && name.startsWith('@luoyu_xingu/dsh-multi-root')) return entry
     }
     return undefined
   }

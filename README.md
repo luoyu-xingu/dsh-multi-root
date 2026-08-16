@@ -44,7 +44,7 @@ one way to get it, then launch the GUI as described below.
 
 ```sh
 # 1. install the plugin into the web profile (pnpm semantics under the hood)
-dsh plugin --profile web add @luoyu-xingu/dsh-multi-root
+dsh plugin --profile web add @luoyu_xingu/dsh-multi-root
 
 # 2. launch the web GUI (Ctrl+C stops it; --port overrides the default)
 dsh web
@@ -52,19 +52,19 @@ dsh web
 
 Open the URL printed by `dsh web` (default `http://127.0.0.1:3080`). The
 `Roots` (`多根`) entry appears in the sidebar — click it to attach folders.
-Verify the install with `dsh plugin --profile web ls @luoyu-xingu/dsh-multi-root`.
+Verify the install with `dsh plugin --profile web ls @luoyu_xingu/dsh-multi-root`.
 
 Upgrade later:
 
 ```sh
-dsh plugin --profile web update @luoyu-xingu/dsh-multi-root
+dsh plugin --profile web update @luoyu_xingu/dsh-multi-root
 dsh web   # restart
 ```
 
 Remove:
 
 ```sh
-dsh plugin --profile web remove @luoyu-xingu/dsh-multi-root
+dsh plugin --profile web remove @luoyu_xingu/dsh-multi-root
 ```
 
 ### From source (clone this repository)
@@ -89,9 +89,9 @@ profile's self-contained copy, and restart:
 ```sh
 pnpm build
 # PowerShell:
-Copy-Item lib\* $env:USERPROFILE\.dsh\profiles\web\node_modules\@luoyu-xingu\dsh-multi-root\lib\ -Recurse -Force
+Copy-Item lib\* $env:USERPROFILE\.dsh\profiles\web\node_modules\@luoyu_xingu\dsh-multi-root\lib\ -Recurse -Force
 # bash:
-cp -r lib/* ~/.dsh/profiles/web/node_modules/@luoyu-xingu/dsh-multi-root/lib/
+cp -r lib/* ~/.dsh/profiles/web/node_modules/@luoyu_xingu/dsh-multi-root/lib/
 dsh web   # restart
 ```
 

@@ -2,7 +2,7 @@
  * Locale dictionaries for the multi-root panel surface. `zh` is the key
  * source; `en` mirrors the same key set (i18n discipline of the dsh-web-ui
  * family). Registered through `ctx.locale.register`.
- * @module @luoyu-xingu/dsh-multi-root/client/locales
+ * @module @luoyu_xingu/dsh-multi-root/client/locales
  */
 
 /** Template values accepted by the interpolator. */

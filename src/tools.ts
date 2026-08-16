@@ -5,7 +5,7 @@
  * session. The GUI and the agent share the same durable store, so a root
  * attached in the panel is immediately operable by any agent, and the agent
  * cannot attach roots itself.
- * @module @luoyu-xingu/dsh-multi-root/tools
+ * @module @luoyu_xingu/dsh-multi-root/tools
  */
 
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'

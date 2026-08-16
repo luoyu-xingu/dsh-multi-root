@@ -1,5 +1,5 @@
 /**
- * Standalone build config for @luoyu-xingu/dsh-multi-root.
+ * Standalone build config for @luoyu_xingu/dsh-multi-root.
  *
  * Two artifacts from one package:
  * - the node half (lib/index.js + lib/invariant.js): the durable roots store,
@@ -27,7 +27,7 @@ import { transform } from 'lightningcss'
  * `DSH_PLUGIN_CLIENT_ID=<alias>`; a mismatch fails the GUI boot with
  * "loaded without registering".
  */
-const ID = process.env.DSH_PLUGIN_CLIENT_ID ?? '@luoyu-xingu/dsh-multi-root'
+const ID = process.env.DSH_PLUGIN_CLIENT_ID ?? '@luoyu_xingu/dsh-multi-root'
 
 /** The module specifiers the web shell shares into the frozen module table. */
 const PLATFORM_MODULES = [

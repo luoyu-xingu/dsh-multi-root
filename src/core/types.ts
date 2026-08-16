@@ -3,7 +3,7 @@
  * both halves exchange and the operation views the routes/tools produce.
  * Types only — this file carries no runtime code, so it is safe to compile
  * into both the host and the client program.
- * @module @luoyu-xingu/dsh-multi-root/core
+ * @module @luoyu_xingu/dsh-multi-root/core
  */
 
 /** One attached root: a stable id, a display name, and the canonical directory path. */

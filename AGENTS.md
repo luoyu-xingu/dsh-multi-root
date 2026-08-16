@@ -59,22 +59,22 @@ npm publish                                  # 需 npm login（registry.npmjs.or
 安装（任意平台）：
 
 ```sh
-dsh plugin --profile web add @luoyu-xingu/dsh-multi-root
-# 或手动：profile package.json dependencies 加 "@luoyu-xingu/dsh-multi-root": "^0.1.0"
+dsh plugin --profile web add @luoyu_xingu/dsh-multi-root
+# 或手动：profile package.json dependencies 加 "@luoyu_xingu/dsh-multi-root": "^0.1.0"
 ```
 
 装完重启 dsh web。发布前注意：npm scope 包要求登录账号拥有该 scope
-（`@luoyu-xingu` 需与账号匹配，否则 403）；版本号用 `npm version patch`
+（scope 名需与 npm 账号 luoyu_xingu 匹配，否则 403）；版本号用 `npm version patch`
 递增，发布后本地开发仍走 file:，二者不冲突。
 
 ## 本机部署（自包含拷贝，无别名、无 junction；仅限本地开发）
 
-本机 profile（`~/.dsh/profiles/web`）以**包本名** `@luoyu-xingu/dsh-multi-root`
-安装：profile 的 `node_modules/@luoyu-xingu/dsh-multi-root` 是**真实目录**
+本机 profile（`~/.dsh/profiles/web`）以**包本名** `@luoyu_xingu/dsh-multi-root`
+安装：profile 的 `node_modules/@luoyu_xingu/dsh-multi-root` 是**真实目录**
 （lib + package.json + cordis.patch.yml + 自带的 node_modules 运行时依赖），
 不引用仓库外部路径。行注入走插件自带的 `cordis.bundle.patch`
 （`cordis.patch.yml` 的 `insert` 行），profile 的 `cordis.patch.yml` 不再
-手动插行；profile package.json 里声明 `"@luoyu-xingu/dsh-multi-root":
+手动插行；profile package.json 里声明 `"@luoyu_xingu/dsh-multi-root":
 "file:E:/dsh_plugins/dsh-multi-root"`（防 pnpm install 修剪，装完后是
 自包含拷贝）。宿主半区的 self hot reload（`src/hmr.ts`）在 web profile 中
 因 hmr 服务禁用而不生效，更新一律重启。
@@ -83,13 +83,13 @@ dsh plugin --profile web add @luoyu-xingu/dsh-multi-root
 的 boot manifest 按 loader entry 名请求并核对 client bundle，bundle 头部的
 `__ModuleLoader__.load({ id })` 必须注册同名，否则浏览器端报
 `loaded without registering "<entry名>"`，整个 GUI 无法启动。包本名安装下
-tsdown 默认 ID（`@luoyu-xingu/dsh-multi-root`）即匹配，无需环境变量；
+tsdown 默认 ID（`@luoyu_xingu/dsh-multi-root`）即匹配，无需环境变量；
 `DSH_PLUGIN_CLIENT_ID` 仅用于换别名时。
 更新流程：
 
 1. `pnpm typecheck && pnpm test && pnpm bundle`（默认 ID，无需环境变量）
 2. 同步产物到 profile 的自包含目录（只拷 lib 即可，node_modules 不动）：
-   `Copy-Item lib\* %USERPROFILE%\.dsh\profiles\web\node_modules\@luoyu-xingu\dsh-multi-root\lib\ -Recurse -Force`
+   `Copy-Item lib\* %USERPROFILE%\.dsh\profiles\web\node_modules\@luoyu_xingu\dsh-multi-root\lib\ -Recurse -Force`
 3. **重启 dsh web**（Ctrl+C 后重新运行）——web profile 的 hmr 服务是禁用的，
    文件变更不会热加载；且宿主按启动时的文件哈希校验 bundle rev，文件被替换
    后旧进程会对旧 rev 返回 404，浏览器报 `bundle script ... failed to load`。
@@ -97,12 +97,12 @@ tsdown 默认 ID（`@luoyu-xingu/dsh-multi-root`）即匹配，无需环境变�
 移除插件（必须两步都做，缺一即 web 无法启动）：
 
 1. 从 profile `package.json` 的 `bundles` 和 `dependencies` 里删掉
-   `@luoyu-xingu/dsh-multi-root`（只删配置不删目录 → 宿主启动报
+   `@luoyu_xingu/dsh-multi-root`（只删配置不删目录 → 宿主启动报
    `Cannot find package ...`）。
-2. 删除 profile 的 `node_modules/@luoyu-xingu/dsh-multi-root` 整目录
+2. 删除 profile 的 `node_modules/@luoyu_xingu/dsh-multi-root` 整目录
    （含其内部 node_modules）。
 
 注意：ESM 模块缓存按「真实路径 URL」钉死，若需热改宿主半区，改完重启
-dsh web 即可（无需别名）；hmr.ts 按 `@luoyu-xingu/dsh-multi-root*` 前缀找
+dsh web 即可（无需别名）；hmr.ts 按 `@luoyu_xingu/dsh-multi-root*` 前缀找
 自己的 loader 条目，改名时保持前缀即可。
 
