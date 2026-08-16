@@ -47,6 +47,17 @@ describe('joinRel / isPathInside', () => {
     expect(joinRel(root, 'a/b.txt')).toBe(join(root, 'a', 'b.txt'))
   })
 
+  it('treats drive-letter-looking names as legal relative paths on POSIX', () => {
+    const root = join(dir, 'root')
+    if (process.platform === 'win32') {
+      expect(() => joinRel(root, 'C:foo.txt')).toThrow(FsOpsError)
+    } else {
+      // On POSIX `C:foo` is a legitimate relative filename (colons are legal).
+      expect(joinRel(root, 'C:foo.txt')).toBe(join(root, 'C:foo.txt'))
+      expect(() => joinRel(root, 'C:..\\escape')).toThrow(FsOpsError)
+    }
+  })
+
   it('compares prefixes case-insensitively on win32', () => {
     const root = join(dir, 'Root')
     expect(isPathInside(root, join(root, 'child'))).toBe(true)
@@ -125,6 +136,9 @@ describe('read / write / list / glob roundtrips', () => {
     expect((await globInRoot(root, 'src/**')).truncated).toBe(false)
     await expect(globInRoot(root, '../*')).rejects.toThrow(FsOpsError)
     await expect(globInRoot(root, '/etc/*')).rejects.toThrow(FsOpsError)
+    // Backslash separators behave identically on every platform (fast-glob
+    // would treat `\` as an escape on POSIX otherwise).
+    expect((await globInRoot(root, 'src\\nested\\b.ts')).matches).toEqual(['src/nested/b.ts'])
   })
 
   it('browses directories with a drive-level entry point on Windows', async () => {

@@ -57,7 +57,9 @@ export function isPathInside(root: string, child: string): boolean {
 export function joinRel(root: string, rel: string): string {
   if (typeof rel !== 'string' || rel === '') throw new FsOpsError('path-invalid', 'path is empty')
   if (isAbsolute(rel)) throw new FsOpsError('path-invalid', 'path must be relative to the root')
-  if (/^[a-zA-Z]:/.test(rel)) throw new FsOpsError('path-invalid', 'path must be relative to the root')
+  // A drive-qualified path is a traversal hazard only on Windows; on POSIX
+  // `C:foo` is a legal relative filename, so the check must not fire there.
+  if (process.platform === 'win32' && /^[a-zA-Z]:/.test(rel)) throw new FsOpsError('path-invalid', 'path must be relative to the root')
   const segments = rel.split(/[\\/]+/)
   if (segments.some(segment => segment === '..')) {
     throw new FsOpsError('path-escape', `path escapes the root: ${rel}`)
@@ -239,11 +241,16 @@ export async function listDir(root: string, rel: string): Promise<{ entries: Dir
  */
 export async function globInRoot(root: string, pattern: string, maxResults: number = MAX_GLOB_MATCHES): Promise<{ matches: string[]; truncated: boolean }> {
   if (typeof pattern !== 'string' || pattern === '') throw new FsOpsError('path-invalid', 'pattern is empty')
-  if (isAbsolute(pattern) || /^[a-zA-Z]:/.test(pattern)) throw new FsOpsError('path-invalid', 'pattern must be relative to the root')
+  if (isAbsolute(pattern)) throw new FsOpsError('path-invalid', 'pattern must be relative to the root')
+  if (process.platform === 'win32' && /^[a-zA-Z]:/.test(pattern)) throw new FsOpsError('path-invalid', 'pattern must be relative to the root')
   const segments = pattern.split(/[\\/]+/)
   if (segments.some(segment => segment === '..')) throw new FsOpsError('path-escape', `pattern escapes the root: ${pattern}`)
+  // fast-glob treats `\` as an escape character on POSIX but as a path
+  // separator on Windows; normalize it so both platforms agree (users often
+  // paste Windows-style patterns from docs or tool output).
+  const normalized = pattern.replaceAll('\\', '/')
   const limit = Number.isInteger(maxResults) && maxResults > 0 ? Math.min(maxResults, MAX_GLOB_MATCHES) : MAX_GLOB_MATCHES
-  const matches = await fg(pattern, {
+  const matches = await fg(normalized, {
     cwd: root,
     followSymbolicLinks: false,
     onlyFiles: false,
