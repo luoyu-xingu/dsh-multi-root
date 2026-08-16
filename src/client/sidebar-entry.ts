@@ -10,7 +10,7 @@
  * reconciliation; the panel it toggles is a separate React root mounted in
  * the center column (see mount.tsx). Placement lands after the sibling
  * family-plugin entries so the block keeps a stable relative order.
- * @module dsh-multi-root/client/sidebar-entry
+ * @module @luoyu-xingu/dsh-multi-root/client/sidebar-entry
  */
 
 import type { PanelController } from './panel/controller.ts'

@@ -8,7 +8,7 @@
  *
  * Export discipline: the /client surface carries what cordis loading needs
  * plus types only — all value exports stay internal.
- * @module dsh-multi-root/client
+ * @module @luoyu-xingu/dsh-multi-root/client
  */
 
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'

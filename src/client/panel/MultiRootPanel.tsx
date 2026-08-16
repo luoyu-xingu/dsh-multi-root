@@ -3,7 +3,7 @@
  * primary workspace), attaches folders via a path input or a host directory
  * browser that starts at the drive level on Windows, and supports rename /
  * remove / reorder. All state is plain React.
- * @module dsh-multi-root/client/panel/MultiRootPanel
+ * @module @luoyu-xingu/dsh-multi-root/client/panel/MultiRootPanel
  */
 
 import { useEffect, useRef, useState } from 'react'

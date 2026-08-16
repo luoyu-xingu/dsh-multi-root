@@ -6,7 +6,7 @@
  * conversation subtree underneath stays mounted and stateful. Opening this
  * panel evicts sibling plugin panels via their activation attributes and the
  * shared activation event.
- * @module dsh-multi-root/client/mount
+ * @module @luoyu-xingu/dsh-multi-root/client/mount
  */
 
 import { createRoot, type Root } from 'react-dom/client'

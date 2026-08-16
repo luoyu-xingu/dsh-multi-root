@@ -2,7 +2,7 @@
  * Wire client for the /api/dsh-multi-root route family. Plain fetch against
  * the same origin (the GUI is served by the same loopback webserver the
  * routes live on); failures surface as thrown Errors with the host message.
- * @module dsh-multi-root/client/api
+ * @module @luoyu-xingu/dsh-multi-root/client/api
  */
 
 import { API } from '../invariant.ts'
