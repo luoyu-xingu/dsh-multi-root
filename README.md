@@ -35,21 +35,67 @@ Hot-pluggable via a cordis profile bundle: no DSH source changes.
   (disable via `announceToAgent: false`; master switch `enabled`).
 - Bilingual UI copy (zh / en), following the document language.
 
-## Install
+## Install & Launch
 
-The plugin is a cordis bundle package. Activate it in the web profile:
+The plugin is a cordis bundle package activated in the **web profile**. Pick
+one way to get it, then launch the GUI as described below.
+
+### From npm (published release — any platform, recommended)
 
 ```sh
-# from a source checkout (file: installs a self-contained copy, no junction)
-dsh plugin --profile web add file:<path>/dsh-multi-root
-
-# from npm (after publishing)
+# 1. install the plugin into the web profile (pnpm semantics under the hood)
 dsh plugin --profile web add @luoyu-xingu/dsh-multi-root
+
+# 2. launch the web GUI (Ctrl+C stops it; --port overrides the default)
+dsh web
 ```
 
-`dsh web` then serves the browser half automatically (the package's `dsh.client`
-declaration), and the package's own `cordis.patch.yml` inserts its loader row.
-**Restart `dsh web` after install or after rebuilding `lib/`** — the web profile
+Open the URL printed by `dsh web` (default `http://127.0.0.1:3080`). The
+`Roots` (`多根`) entry appears in the sidebar — click it to attach folders.
+Verify the install with `dsh plugin --profile web ls @luoyu-xingu/dsh-multi-root`.
+
+Upgrade later:
+
+```sh
+dsh plugin --profile web update @luoyu-xingu/dsh-multi-root
+dsh web   # restart
+```
+
+Remove:
+
+```sh
+dsh plugin --profile web remove @luoyu-xingu/dsh-multi-root
+```
+
+### From source (clone this repository)
+
+```sh
+git clone https://github.com/luoyu-xingu/dsh-multi-root.git
+cd dsh-multi-root
+pnpm install
+pnpm build        # typechecks, then emits lib/ (node half + client bundle)
+
+# install the local checkout into the web profile; file: installs a
+# self-contained copy (no junction, no absolute path kept in node_modules)
+dsh plugin --profile web add file:<absolute path to the checkout>
+#   Windows example: dsh plugin --profile web add file:E:/dsh_plugins/dsh-multi-root
+
+dsh web
+```
+
+Rebuilding after code changes — build, sync the fresh `lib/` into the
+profile's self-contained copy, and restart:
+
+```sh
+pnpm build
+# PowerShell:
+Copy-Item lib\* $env:USERPROFILE\.dsh\profiles\web\node_modules\@luoyu-xingu\dsh-multi-root\lib\ -Recurse -Force
+# bash:
+cp -r lib/* ~/.dsh/profiles/web/node_modules/@luoyu-xingu/dsh-multi-root/lib/
+dsh web   # restart
+```
+
+**Restart `dsh web` after install or after every rebuild** — the web profile
 disables the cordis HMR service, so file changes are not hot-loaded; the host
 also validates the bundle revision against the startup file hash, and a stale
 process answers old revisions with 404 (`bundle script ... failed to load`).

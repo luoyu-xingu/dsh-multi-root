@@ -29,23 +29,68 @@ DeepSeek Harness Web GUI 的多根工作区插件：给 DSH 挂载多个**独立
   可关闭；`enabled` 为总开关）。
 - 双语界面文案（中 / 英），跟随文档语言。
 
-## 安装
+## 安装与启动
 
-插件是 cordis bundle 包，在 web profile 中激活：
+插件是 cordis bundle 包，在 **web profile** 中激活。二选一获取，然后按下述
+方式启动 GUI。
+
+### 方式一：npm 安装（发布后的正式版本——任意平台，推荐）
 
 ```sh
-# 源码 checkout（file: 安装为自包含拷贝，无 junction 外链）
-dsh plugin --profile web add file:<path>/dsh-multi-root
-
-# npm（发布后）
+# 1. 安装插件到 web profile（底层是 pnpm 语义）
 dsh plugin --profile web add @luoyu-xingu/dsh-multi-root
+
+# 2. 启动 web GUI（Ctrl+C 停止；--port 可改端口）
+dsh web
 ```
 
-`dsh web` 会依据包内 `dsh.client` 声明自动伺服浏览器半区，包自带的
-`cordis.patch.yml` 负责插入 loader 行。**安装或重新构建 `lib/` 后需重启
-`dsh web`**——web profile 禁用了 cordis HMR 服务，文件变更不会热加载；
-宿主还会按启动时的文件哈希校验 bundle rev，旧进程对旧 rev 返回 404
-（`bundle script ... failed to load`）。
+在浏览器打开 `dsh web` 打印的地址（默认 `http://127.0.0.1:3080`）。侧边栏
+出现 `多根`（`Roots`）入口，点击即可挂载文件夹。可用
+`dsh plugin --profile web ls @luoyu-xingu/dsh-multi-root` 验证安装。
+
+后续升级：
+
+```sh
+dsh plugin --profile web update @luoyu-xingu/dsh-multi-root
+dsh web   # 重启
+```
+
+卸载：
+
+```sh
+dsh plugin --profile web remove @luoyu-xingu/dsh-multi-root
+```
+
+### 方式二：源码下载（clone 本仓库）
+
+```sh
+git clone https://github.com/luoyu-xingu/dsh-multi-root.git
+cd dsh-multi-root
+pnpm install
+pnpm build        # 类型检查 + 产出 lib/（宿主半区 + 客户端 bundle）
+
+# 把本地 checkout 安装进 web profile；file: 安装为自包含拷贝
+# （无 junction 外链，node_modules 里不保留绝对路径）
+dsh plugin --profile web add file:<checkout 的绝对路径>
+#   Windows 示例：dsh plugin --profile web add file:E:/dsh_plugins/dsh-multi-root
+
+dsh web
+```
+
+改代码后重新部署——构建 → 把新 `lib/` 同步进 profile 的自包含拷贝 → 重启：
+
+```sh
+pnpm build
+# PowerShell：
+Copy-Item lib\* $env:USERPROFILE\.dsh\profiles\web\node_modules\@luoyu-xingu\dsh-multi-root\lib\ -Recurse -Force
+# bash：
+cp -r lib/* ~/.dsh/profiles/web/node_modules/@luoyu-xingu/dsh-multi-root/lib/
+dsh web   # 重启
+```
+
+**安装或每次重新构建后都需重启 `dsh web`**——web profile 禁用了 cordis HMR
+服务，文件变更不会热加载；宿主还会按启动时的文件哈希校验 bundle rev，旧进程
+对旧 rev 返回 404（`bundle script ... failed to load`）。
 
 ## 使用
 
