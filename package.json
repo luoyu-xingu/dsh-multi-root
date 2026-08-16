@@ -88,6 +88,14 @@
     "cordis.patch.yml",
     "README.md"
   ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "cordis",
+    "multi-root",
+    "workspace"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
